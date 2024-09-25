@@ -285,4 +285,4 @@ function shuffleQueue(queue) {
 
 
 
-client.login('MTI4Nzk3MjkxNDg1NTE1MzgxNA.GYGEUJ.RmV5_tAxmdu4oe1mTbYwD2XTgIyG1uSWBGcdQI');
+client.login('token del bot aqui');
