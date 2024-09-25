@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
+const { Client, GatewayIntentBits, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, StreamType } = require('@discordjs/voice');
 const { exec } = require('child_process');
 const fs = require('fs');
@@ -20,8 +20,6 @@ const client = new Client({
     ]
 });
 
-
-
 async function playNextInQueue(voiceChannel) {
     if (!connection || connection.state.status === 'disconnected') {
         try {
@@ -42,7 +40,7 @@ async function playNextInQueue(voiceChannel) {
         } catch (error) {
             console.error('Error al intentar unirse al canal de voz:', error.message);
             voiceChannel.send('No puedo unirme al canal de voz. Verifica mis permisos.');
-            isProcessing = false;  // Permitir procesar la siguiente canción
+            isProcessing = false;
             return;
         }
     }
@@ -52,21 +50,19 @@ async function playNextInQueue(voiceChannel) {
             connection.destroy();
             connection = null;
         }
-        currentSong = null;  // No hay canción en reproducción
-        isProcessing = false;  // Reiniciar estado de procesamiento
+        currentSong = null;
+        isProcessing = false;
         return;
     }
 
     if (isProcessing) {
-        return;  // No continuar si ya hay una canción en proceso
+        return;
     }
 
-    isProcessing = true;  // Marcar que estamos procesando una canción
+    isProcessing = true;
 
     const song = queue[0];
-
-    // Guardar la canción actual como "now playing"
-    currentSong = song;
+    currentSong = song;  // Guardar la canción actual como "now playing"
 
     // Generar un nombre de archivo temporal único para cada canción
     const tempPath = path.join(__dirname, `temp_audio_${Date.now()}.mp3`);
@@ -75,9 +71,9 @@ async function playNextInQueue(voiceChannel) {
         if (error) {
             console.error(`Error ejecutando yt-dlp: ${error.message}`);
             song.channel.send('Error al intentar descargar el audio.');
-            queue.shift();  // Remover canción fallida de la cola
-            isProcessing = false;  // Permitir procesar la siguiente canción
-            playNextInQueue(voiceChannel);  // Intentar la siguiente canción
+            queue.shift();
+            isProcessing = false;
+            playNextInQueue(voiceChannel);
             return;
         }
 
@@ -85,9 +81,9 @@ async function playNextInQueue(voiceChannel) {
         if (stats.size < 10000) {  // Verificar que el archivo tenga un tamaño mínimo (10KB)
             console.log('El archivo de audio parece incompleto o muy pequeño, saltando canción.');
             song.channel.send('El archivo de audio parece incompleto, saltando a la siguiente canción.');
-            fs.unlinkSync(tempPath);  // Eliminar archivo incompleto
-            queue.shift();  // Saltar a la siguiente canción
-            isProcessing = false;  // Permitir procesar la siguiente canción
+            fs.unlinkSync(tempPath);
+            queue.shift();
+            isProcessing = false;
             playNextInQueue(voiceChannel);
             return;
         }
@@ -97,16 +93,16 @@ async function playNextInQueue(voiceChannel) {
             inlineVolume: true
         });
 
-        resource.volume.setVolume(currentVolume);  // Ajustar el volumen actual
+        resource.volume.setVolume(currentVolume);
 
         player = createAudioPlayer();
-        
+
         if (connection && connection.state.status === 'ready') {
             connection.subscribe(player);
         } else {
             console.error('La conexión de voz no se ha establecido correctamente.');
             song.channel.send('Error al conectarse al canal de voz.');
-            isProcessing = false;  // Permitir procesar la siguiente canción
+            isProcessing = false;
             return;
         }
 
@@ -114,25 +110,108 @@ async function playNextInQueue(voiceChannel) {
 
         player.on(AudioPlayerStatus.Playing, () => {
             console.log(`Reproduciendo: ${song.url}`);
+            showMusicControls(song.channel);  // Mostrar los botones de control cuando empiece la música
         });
 
         player.on(AudioPlayerStatus.Idle, () => {
             console.log(`Canción terminada: ${song.url}`);
-            fs.unlinkSync(tempPath);  // Eliminar archivo temporal
-            queue.shift();  // Remover la canción reproducida
-            isProcessing = false;  // Permitir procesar la siguiente canción
-            playNextInQueue(voiceChannel);  // Intentar reproducir la siguiente canción
+            fs.unlinkSync(tempPath);
+            queue.shift();
+            isProcessing = false;
+            playNextInQueue(voiceChannel);
         });
 
         player.on('error', error => {
             console.error(`Error en la reproducción: ${error.message}`);
-            fs.unlinkSync(tempPath);  // Asegurar que el archivo temporal se elimine en caso de error
-            queue.shift();  // Remover la canción con error
-            isProcessing = false;  // Permitir procesar la siguiente canción
+            fs.unlinkSync(tempPath);
+            queue.shift();
+            isProcessing = false;
             playNextInQueue(voiceChannel);
         });
     });
 }
+
+// Mostrar los botones de control en el chat
+function showMusicControls(channel) {
+    const row = new ActionRowBuilder()
+        .addComponents(
+            new ButtonBuilder()
+                .setCustomId('skip')
+                .setLabel('⏭ Saltar')
+                .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder()
+                .setCustomId('pause_resume')
+                .setLabel('⏸ Pausar/▶️ Reanudar')
+                .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+                .setCustomId('shuffle')
+                .setLabel('🔀 Mezclar')
+                .setStyle(ButtonStyle.Success),
+            new ButtonBuilder()
+                .setCustomId('stop')
+                .setLabel('⏹ Detener')
+                .setStyle(ButtonStyle.Danger),
+            new ButtonBuilder()
+                .setCustomId('nowplaying')
+                .setLabel('🎶 Now Playing')
+                .setStyle(ButtonStyle.Secondary)
+        );
+
+    channel.send({
+        content: 'Controla la reproducción de música:',
+        components: [row]
+    });
+}
+
+// Manejar la interacción con los botones
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isButton()) return;
+
+    const voiceChannel = interaction.member.voice.channel;
+
+    if (!voiceChannel) {
+        return interaction.reply({ content: 'Debes estar en un canal de voz para controlar la música.', ephemeral: true });
+    }
+
+    if (!player) {
+        return interaction.reply({ content: 'No hay música en reproducción.', ephemeral: true });
+    }
+
+    if (interaction.customId === 'skip') {
+        if (queue.length > 1) {
+            player.stop();
+            interaction.reply('⏭ Saltando a la siguiente canción.');
+        } else {
+            interaction.reply('No hay más canciones en la cola.');
+        }
+    } else if (interaction.customId === 'pause_resume') {
+        if (player.state.status === AudioPlayerStatus.Playing) {
+            player.pause();
+            interaction.reply('⏸ Música pausada.');
+        } else if (player.state.status === AudioPlayerStatus.Paused) {
+            player.unpause();
+            interaction.reply('▶️ Música reanudada.');
+        } else {
+            interaction.reply('No hay música en reproducción.');
+        }
+    } else if (interaction.customId === 'shuffle') {
+        shuffleQueue(queue);
+        interaction.reply('🔀 La cola ha sido mezclada.');
+    } else if (interaction.customId === 'stop') {
+        if (player) {
+            player.stop();
+            queue = [];
+            currentSong = null;  // Limpiar la canción actual
+            interaction.reply('⏹ Música detenida y cola eliminada.');
+        }
+    } else if (interaction.customId === 'nowplaying') {
+        if (currentSong) {
+            interaction.reply(`🎶 Reproduciendo ahora: ${currentSong.url}`);
+        } else {
+            interaction.reply('No se está reproduciendo ninguna canción en este momento.');
+        }
+    }
+});
 
 client.on('messageCreate', async message => {
     if (!message.content.startsWith('!') || message.author.bot) return;
@@ -156,9 +235,7 @@ client.on('messageCreate', async message => {
             return message.channel.send('No tengo permisos para unirme y hablar en tu canal de voz.');
         }
 
-        // Verificar si es una playlist
         if (query.includes('playlist')) {
-            // Ejecutar yt-dlp para extraer todas las canciones de la playlist
             exec(`yt-dlp -j --flat-playlist "${query}"`, (error, stdout, stderr) => {
                 if (error) {
                     console.error(`Error ejecutando yt-dlp: ${error.message}`);
@@ -173,57 +250,19 @@ client.on('messageCreate', async message => {
 
                 message.channel.send(`Se añadieron ${playlistData.length} canciones a la cola.`);
 
-                // Iniciar la reproducción si no hay otra canción en reproducción
                 if (!isProcessing) {
-                    playNextInQueue(voiceChannel);  // Empezar a procesar si no hay nada en curso
+                    playNextInQueue(voiceChannel);
                 }
             });
 
         } else {
-            // Añadir una canción individual a la cola
             queue.push({ url: query, member: message.member, channel: message.channel });
 
             if (!isProcessing) {
-                playNextInQueue(voiceChannel);  // Empezar a procesar si no hay nada en curso
+                playNextInQueue(voiceChannel);
             } else {
                 message.channel.send('La canción ha sido añadida a la cola.');
             }
-        }
-
-    } else if (command === 'skip') {
-        if (queue.length > 1) {
-            player.stop();  // Detener la canción actual
-            message.channel.send('⏭ Saltando a la siguiente canción.');
-        } else {
-            message.channel.send('No hay más canciones en la cola.');
-        }
-    }
-
-    if (command === 'pause') {
-        if (player) {
-            player.pause();
-            message.channel.send('⏸ Música pausada.');
-        }
-
-    } else if (command === 'resume') {
-        if (player) {
-            player.unpause();
-            message.channel.send('▶️ Música reanudada.');
-        }
-
-    } else if (command === 'stop') {
-        if (player) {
-            player.stop();
-            queue = [];
-            currentSong = null;  // Limpiar la canción actual
-            message.channel.send('⏹ Música detenida y cola eliminada.');
-        }
-
-    } else if (command === 'nowplaying') {
-        if (currentSong) {
-            message.channel.send(`🎶 Reproduciendo ahora: ${currentSong.url}`);
-        } else {
-            message.channel.send('No se está reproduciendo ninguna canción en este momento.');
         }
 
     } else if (command === 'queue') {
@@ -233,24 +272,6 @@ client.on('messageCreate', async message => {
             const queueList = queue.map((song, index) => `${index + 1}. ${song.url}`).join('\n');
             message.channel.send(`🎶 Cola de reproducción:\n${queueList}`);
         }
-
-    } else if (command === 'volume') {
-        const volume = parseFloat(args[0]);
-        if (!isNaN(volume) && volume >= 0 && volume <= 100) {
-            currentVolume = volume / 100;  // Ajustar el volumen entre 0.0 y 1.0
-            message.channel.send(`🔊 Volumen ajustado a ${volume}%`);
-
-            if (queue.length > 0) {
-                // Reproducir la canción actual con el nuevo volumen
-                playNextInQueue(message.member.voice.channel);
-            }
-        } else {
-            message.channel.send('Proporciona un valor de volumen entre 0 y 100.');
-        }
-
-    } else if (command === 'shuffle') {
-        shuffleQueue(queue);
-        message.channel.send('🔀 La cola ha sido mezclada.');
     }
 });
 
@@ -264,4 +285,4 @@ function shuffleQueue(queue) {
 
 
 
-client.login('token de bot aqui');
+client.login('MTI4Nzk3MjkxNDg1NTE1MzgxNA.GYGEUJ.RmV5_tAxmdu4oe1mTbYwD2XTgIyG1uSWBGcdQI');
