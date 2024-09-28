@@ -4,12 +4,19 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+
+// Guardar el PID del proceso actual en un archivo
+const pidFile = path.join(__dirname, 'bot.pid');
+fs.writeFileSync(pidFile, process.pid.toString(), 'utf8');
+
+
 let queue = [];  // Cola de canciones
 let player;  // Reproductor de audio
 let currentVolume = 0.5;  // Volumen por defecto (50%)
 let connection;  // Conexión de voz
 let isProcessing = false;  // Variable para controlar si ya se está procesando una canción
 let currentSong = null;  // Variable para almacenar la canción que se está reproduciendo
+let buttonsSent = false;  // Nueva variable para rastrear si ya se enviaron los botones
 
 const client = new Client({
     intents: [
@@ -52,6 +59,7 @@ async function playNextInQueue(voiceChannel) {
         }
         currentSong = null;
         isProcessing = false;
+        buttonsSent = false;  // Resetear el envío de botones al finalizar la lista
         return;
     }
 
@@ -110,7 +118,10 @@ async function playNextInQueue(voiceChannel) {
 
         player.on(AudioPlayerStatus.Playing, () => {
             console.log(`Reproduciendo: ${song.url}`);
-            showMusicControls(song.channel);  // Mostrar los botones de control cuando empiece la música
+            if (!buttonsSent) {  // Solo enviar los botones si no han sido enviados aún
+                showMusicControls(song.channel);  // Mostrar los botones de control cuando empiece la música
+                buttonsSent = true;  // Marcar que los botones ya han sido enviados
+            }
         });
 
         player.on(AudioPlayerStatus.Idle, () => {
@@ -181,6 +192,7 @@ client.on('interactionCreate', async interaction => {
         if (queue.length > 1) {
             player.stop();
             interaction.reply('⏭ Saltando a la siguiente canción.');
+            showMusicControls(interaction.channel);  // Volver a mostrar los botones después de saltar
         } else {
             interaction.reply('No hay más canciones en la cola.');
         }
@@ -207,6 +219,7 @@ client.on('interactionCreate', async interaction => {
     } else if (interaction.customId === 'nowplaying') {
         if (currentSong) {
             interaction.reply(`🎶 Reproduciendo ahora: ${currentSong.url}`);
+            showMusicControls(interaction.channel);  // Volver a mostrar los botones al presionar "Now Playing"
         } else {
             interaction.reply('No se está reproduciendo ninguna canción en este momento.');
         }
@@ -282,7 +295,6 @@ function shuffleQueue(queue) {
         [queue[i], queue[j]] = [queue[j], queue[i]];
     }
 }
-
 
 
 client.login('token del bot aqui');
