@@ -12,7 +12,7 @@ fs.writeFileSync(pidFile, process.pid.toString(), 'utf8');
 
 let queue = [];  // Cola de canciones
 let player;  // Reproductor de audio
-let currentVolume = 0.5;  // Volumen por defecto (50%)
+let currentVolume = 1;  // Volumen por defecto (100%)
 let connection;  // Conexión de voz
 let isProcessing = false;  // Variable para controlar si ya se está procesando una canción
 let currentSong = null;  // Variable para almacenar la canción que se está reproduciendo
@@ -235,7 +235,7 @@ client.on('messageCreate', async message => {
     if (command === 'play') {
         const query = args.join(' ');
         if (!query) {
-            return message.channel.send('Debes proporcionar una URL de YouTube.');
+            return message.channel.send('Debes proporcionar una URL de YouTube o un nombre de canción.');
         }
 
         const voiceChannel = message.member.voice.channel;
@@ -248,27 +248,33 @@ client.on('messageCreate', async message => {
             return message.channel.send('No tengo permisos para unirme y hablar en tu canal de voz.');
         }
 
-        if (query.includes('playlist')) {
-            exec(`yt-dlp -j --flat-playlist "${query}"`, (error, stdout, stderr) => {
+        if (query.includes('list=')) {
+            // Ejecutar yt-dlp para extraer todas las canciones de la playlist con un maxBuffer más grande
+            exec(`yt-dlp -j --flat-playlist "${query}"`, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
                 if (error) {
                     console.error(`Error ejecutando yt-dlp: ${error.message}`);
                     return message.channel.send('Error al intentar obtener la playlist.');
                 }
 
-                const playlistData = stdout.trim().split('\n').map(JSON.parse);
-                for (const item of playlistData) {
-                    const videoUrl = `https://www.youtube.com/watch?v=${item.id}`;
-                    queue.push({ url: videoUrl, member: message.member, channel: message.channel });
-                }
+                try {
+                    const playlistData = stdout.trim().split('\n').map(JSON.parse);
+                    for (const item of playlistData) {
+                        const videoUrl = `https://www.youtube.com/watch?v=${item.id}`;
+                        queue.push({ url: videoUrl, member: message.member, channel: message.channel });
+                    }
 
-                message.channel.send(`Se añadieron ${playlistData.length} canciones a la cola.`);
+                    message.channel.send(`Se añadieron ${playlistData.length} canciones a la cola.`);
 
-                if (!isProcessing) {
-                    playNextInQueue(voiceChannel);
+                    if (!isProcessing) {
+                        playNextInQueue(voiceChannel);
+                    }
+                } catch (parseError) {
+                    console.error(`Error al analizar la respuesta de yt-dlp: ${parseError.message}`);
+                    message.channel.send('Error al intentar procesar la playlist.');
                 }
             });
-
-        } else {
+        } else if (query.startsWith('http')) {
+            // Si el query es un enlace de YouTube individual, añadirlo directamente a la cola
             queue.push({ url: query, member: message.member, channel: message.channel });
 
             if (!isProcessing) {
@@ -276,6 +282,28 @@ client.on('messageCreate', async message => {
             } else {
                 message.channel.send('La canción ha sido añadida a la cola.');
             }
+        } else {
+            // Buscar en YouTube el primer resultado usando yt-dlp
+            exec(`yt-dlp "ytsearch:${query}" --get-id`, (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`Error ejecutando yt-dlp para búsqueda: ${error.message}`);
+                    return message.channel.send('Error al intentar buscar la canción en YouTube.');
+                }
+
+                const videoId = stdout.trim();
+                if (!videoId) {
+                    return message.channel.send('No se encontraron resultados para la búsqueda.');
+                }
+
+                const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                queue.push({ url: videoUrl, member: message.member, channel: message.channel });
+
+                if (!isProcessing) {
+                    playNextInQueue(voiceChannel);
+                } else {
+                    message.channel.send(`La canción ha sido añadida a la cola: ${videoUrl}`);
+                }
+            });
         }
 
     } else if (command === 'queue') {
@@ -287,6 +315,8 @@ client.on('messageCreate', async message => {
         }
     }
 });
+
+
 
 // Función para mezclar la cola
 function shuffleQueue(queue) {
