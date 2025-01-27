@@ -1,0 +1,5 @@
+Error ejecutando yt-dlp: Command failed: yt-dlp -x --audio-format mp3 -o "C:\Users\fiae\botprueba\temp_audio_1737069256238.mp3" "https://www.youtube.com/watch?v=kJQP7kiw5Fk"
+ERROR: unable to download video data: HTTP Error 403: Forbidden
+
+para poder arreglar este error solo actualizar la libreria de yt-dlp con el comando:
+pip install --upgrade yt-dlp
