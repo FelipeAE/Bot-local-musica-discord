@@ -1,22 +1,54 @@
-const { Client, GatewayIntentBits, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { Client, GatewayIntentBits, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, StreamType } = require('@discordjs/voice');
 const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { v4: uuidv4 } = require('uuid'); // NEW: Para nombres de archivo únicos
+const { createLogger, format, transports } = require('winston');
+const moment = require('moment-timezone');
+const { title } = require('process');
+const { url } = require('inspector');
+const { get } = require('http');
 
+// Configura tu zona horaria (cambia 'America/Santiago' por tu zona)
+const TIMEZONE = 'America/Santiago';  // Ej: Europe/Madrid, America/Mexico_City
+
+const logger = createLogger({
+    level: 'info',
+    format: format.combine(
+        format.timestamp(),
+        format.printf(({ timestamp, level, message }) => {
+            // Formatea la fecha con tu zona horaria
+            const localTime = moment(timestamp).tz(TIMEZONE).format('DD-MM-YY HH:mm');
+            return `${localTime} [${level.toUpperCase()}]: ${message}`;
+        })
+    ),
+    transports: [
+        new transports.File({ filename: 'music-bot.log' }),
+        new transports.Console()
+    ]
+});
 
 // Guardar el PID del proceso actual en un archivo
 const pidFile = path.join(__dirname, 'bot.pid');
 fs.writeFileSync(pidFile, process.pid.toString(), 'utf8');
 
+let queue = [];
+let player;
+let currentVolume = 1;
+let connection;
+let isProcessing = false;
+let currentSong = null;
+let buttonsSent = false;
+let controlMessage = null;  // Almacena el mensaje de controles
+let lastChannelId = null;   // Guarda el ID del último canal donde se enviaron controles 
+const processes = new Set(); // NEW: Trackear procesos hijos
+const queueButton = new ButtonBuilder()
+    .setCustomId('show_queue')
+    .setLabel('🎵 Mostrar Cola')
+    .setStyle(ButtonStyle.Primary);
 
-let queue = [];  // Cola de canciones
-let player;  // Reproductor de audio
-let currentVolume = 1;  // Volumen por defecto (100%)
-let connection;  // Conexión de voz
-let isProcessing = false;  // Variable para controlar si ya se está procesando una canción
-let currentSong = null;  // Variable para almacenar la canción que se está reproduciendo
-let buttonsSent = false;  // Nueva variable para rastrear si ya se enviaron los botones
+
 
 const client = new Client({
     intents: [
@@ -27,7 +59,39 @@ const client = new Client({
     ]
 });
 
+// async function getVideoTitle(url) {
+//     return new Promise((resolve, reject) => {
+//         exec(`yt-dlp --get-title "${url}"`, (error, stdout, stderr) => {
+//             if (error) {
+//                 console.error(`Error obteniendo título: ${error.message}`);
+//                 reject('Título no disponible');
+//             } else {
+//                 resolve(stdout.trim());
+//             }
+//         });
+//     });
+// }
+
+// async function addSongToQueue(url, member, channel, voiceChannel) {
+//     try {
+//         //const title = await getVideoTitle(url);  // Obtener el título
+//         queue.push({ url, title, member, channel });  // Guardar título en la cola
+//         // channel.send(`🎵 Canción añadida: **${title}**`);
+
+//         // Si no hay ninguna canción en reproducción, iniciar la reproducción
+//         if (!isProcessing) {
+//             playNextInQueue(voiceChannel);
+//         }
+//     } catch (error) {
+//         console.error('Error al obtener el título:', error);
+//         channel.send('No se pudo obtener el título de la canción.');
+//     }
+// }
+
 async function playNextInQueue(voiceChannel) {
+    // NEW: Resetear controles al empezar nueva canción
+    buttonsSent = false;
+    
     if (!connection || connection.state.status === 'disconnected') {
         try {
             connection = joinVoiceChannel({
@@ -37,16 +101,18 @@ async function playNextInQueue(voiceChannel) {
             });
 
             connection.on('stateChange', (oldState, newState) => {
+                // NEW: Manejo mejorado de reconexión
                 if (newState.status === 'disconnected') {
-                    console.log('La conexión de voz se ha desconectado.');
-                    connection.destroy();
-                    connection = null;
+                    logger.warn('Conexión perdida. Intentando reconectar...');
+                    setTimeout(() => {
+                        playNextInQueue(voiceChannel);
+                    }, 5000);
                 }
             });
 
         } catch (error) {
-            console.error('Error al intentar unirse al canal de voz:', error.message);
-            voiceChannel.send('No puedo unirme al canal de voz. Verifica mis permisos.');
+            logger.error(`Error de conexión: ${error.message}`);
+            voiceChannel.send('Error al conectar al canal de voz.');
             isProcessing = false;
             return;
         }
@@ -59,170 +125,288 @@ async function playNextInQueue(voiceChannel) {
         }
         currentSong = null;
         isProcessing = false;
-        buttonsSent = false;  // Resetear el envío de botones al finalizar la lista
+        buttonsSent = false;
+        // NEW: Limpiar mensaje de controles
+        if (controlMessage) {
+            await controlMessage.edit({ components: [] });  // Elimina los botones
+            controlMessage = null;
+        }
         return;
     }
 
-    if (isProcessing) {
-        return;
-    }
-
+    if (isProcessing) return;
     isProcessing = true;
 
     const song = queue[0];
-    currentSong = song;  // Guardar la canción actual como "now playing"
+    currentSong = song;
 
-    // Generar un nombre de archivo temporal único para cada canción
-    const tempPath = path.join(__dirname, `temp_audio_${Date.now()}.mp3`);
+    // NEW: Nombre de archivo único con UUID
+    const tempPath = path.join(__dirname, `temp_audio_${uuidv4()}.mp3`);
+    const timeout = 60000; // 60 segundos
 
-    exec(`yt-dlp -x --audio-format mp3 -o "${tempPath}" "${song.url}"`, (error, stdout, stderr) => {
+    // NEW: Manejo de procesos con timeout
+    const child = exec(`yt-dlp -x --audio-format mp3 -o "${tempPath}" "${song.url}"`, { timeout }, (error) => {
+        processes.delete(child);
         if (error) {
-            console.error(`Error ejecutando yt-dlp: ${error.message}`);
-            song.channel.send('Error al intentar descargar el audio.');
+            logger.error(`Error yt-dlp: ${error.message}`);
+            song.channel.send('Error al descargar el audio.');
             queue.shift();
             isProcessing = false;
             playNextInQueue(voiceChannel);
             return;
         }
 
-        const stats = fs.statSync(tempPath);
-        if (stats.size < 10000) {  // Verificar que el archivo tenga un tamaño mínimo (10KB)
-            console.log('El archivo de audio parece incompleto o muy pequeño, saltando canción.');
-            song.channel.send('El archivo de audio parece incompleto, saltando a la siguiente canción.');
-            fs.unlinkSync(tempPath);
-            queue.shift();
-            isProcessing = false;
-            playNextInQueue(voiceChannel);
-            return;
-        }
-
-        const resource = createAudioResource(fs.createReadStream(tempPath), {
-            inputType: StreamType.Arbitrary,
-            inlineVolume: true
-        });
-
-        resource.volume.setVolume(currentVolume);
-
-        player = createAudioPlayer();
-
-        if (connection && connection.state.status === 'ready') {
-            connection.subscribe(player);
-        } else {
-            console.error('La conexión de voz no se ha establecido correctamente.');
-            song.channel.send('Error al conectarse al canal de voz.');
-            isProcessing = false;
-            return;
-        }
-
-        player.play(resource);
-
-        player.on(AudioPlayerStatus.Playing, () => {
-            console.log(`Reproduciendo: ${song.url}`);
-            if (!buttonsSent) {  // Solo enviar los botones si no han sido enviados aún
-                showMusicControls(song.channel);  // Mostrar los botones de control cuando empiece la música
-                buttonsSent = true;  // Marcar que los botones ya han sido enviados
+        try {
+            const stats = fs.statSync(tempPath);
+            if (stats.size < 10000) {
+                logger.warn('Archivo de audio muy pequeño');
+                song.channel.send('Audio incompleto, saltando...');
+                fs.unlinkSync(tempPath);
+                queue.shift();
+                isProcessing = false;
+                playNextInQueue(voiceChannel);
+                return;
             }
-        });
 
-        player.on(AudioPlayerStatus.Idle, () => {
-            console.log(`Canción terminada: ${song.url}`);
+            const resource = createAudioResource(fs.createReadStream(tempPath), {
+                inputType: StreamType.Arbitrary,
+                inlineVolume: true
+            });
+
+            resource.volume.setVolume(currentVolume);
+            player = createAudioPlayer();
+
+            if (connection && connection.state.status === 'ready') {
+                connection.subscribe(player);
+            } else {
+                throw new Error('Conexión no establecida');
+            }
+
+            player.play(resource);
+
+            player.on(AudioPlayerStatus.Playing, () => {
+                logger.info(`Reproduciendo: ${song.url}`);
+                showMusicControls(song.channel);
+            });
+
+            player.on(AudioPlayerStatus.Idle, () => {
+                logger.info(`Canción finalizada: ${song.url}`);
+                fs.unlinkSync(tempPath);
+                queue.shift();
+                isProcessing = false;
+                playNextInQueue(voiceChannel);
+            });
+
+            player.on('error', error => {
+                logger.error(`Error de reproducción: ${error.message}`);
+                fs.unlinkSync(tempPath);
+                queue.shift();
+                isProcessing = false;
+                playNextInQueue(voiceChannel);
+            });
+
+        } catch (error) {
+            logger.error(`Error de reproducción: ${error.message}`);
             fs.unlinkSync(tempPath);
             queue.shift();
             isProcessing = false;
             playNextInQueue(voiceChannel);
-        });
-
-        player.on('error', error => {
-            console.error(`Error en la reproducción: ${error.message}`);
-            fs.unlinkSync(tempPath);
-            queue.shift();
-            isProcessing = false;
-            playNextInQueue(voiceChannel);
-        });
+        }
     });
+
+    // NEW: Manejar timeout de procesos
+    child.on('timeout', () => {
+        logger.error('Timeout en descarga');
+        child.kill();
+        fs.unlinkSync(tempPath);
+        song.channel.send('Tiempo excedido al descargar la canción.');
+    });
+
+    processes.add(child);
 }
 
-// Mostrar los botones de control en el chat
-function showMusicControls(channel) {
-    const row = new ActionRowBuilder()
-        .addComponents(
-            new ButtonBuilder()
-                .setCustomId('skip')
-                .setLabel('⏭ Saltar')
-                .setStyle(ButtonStyle.Primary),
-            new ButtonBuilder()
-                .setCustomId('pause_resume')
-                .setLabel('⏸ Pausar/▶️ Reanudar')
-                .setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder()
-                .setCustomId('shuffle')
-                .setLabel('🔀 Mezclar')
-                .setStyle(ButtonStyle.Success),
-            new ButtonBuilder()
-                .setCustomId('stop')
-                .setLabel('⏹ Detener')
-                .setStyle(ButtonStyle.Danger),
-            new ButtonBuilder()
-                .setCustomId('nowplaying')
-                .setLabel('🎶 Now Playing')
-                .setStyle(ButtonStyle.Secondary)
-        );
+// NEW: Función actualizada para manejar un único mensaje de controles
+async function showMusicControls(channel) {
+    const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId('skip')
+            .setLabel('⏭ Saltar')
+            .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+            .setCustomId('pause_resume')
+            .setLabel('⏸ Pausar/▶️ Reanudar')
+            .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('shuffle')
+            .setLabel('🔀 Mezclar')
+            .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+            .setCustomId('stop')
+            .setLabel('⏹ Detener')
+            .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+            .setCustomId('nowplaying')
+            .setLabel('🎶 Now Playing')
+            .setStyle(ButtonStyle.Secondary),   
+    );
 
-    channel.send({
-        content: 'Controla la reproducción de música:',
-        components: [row]
-    });
+    const row2 = new ActionRowBuilder().addComponents(
+        queueButton
+    );
+
+    try {
+        // Si hay un mensaje anterior, lo eliminamos
+        if (controlMessage) {
+            await controlMessage.delete().catch(() => {});  // Ignorar errores si el mensaje ya no existe
+        }
+
+        // Enviamos un nuevo mensaje con botones
+        controlMessage = await channel.send({
+            content: 'Controla la reproducción de música:',
+            components: [row, row2],
+        });
+    } catch (error) {
+        console.error('Error enviando controles:', error);
+    }
 }
 
-// Manejar la interacción con los botones
+
 client.on('interactionCreate', async interaction => {
     if (!interaction.isButton()) return;
 
     const voiceChannel = interaction.member.voice.channel;
+    if (!voiceChannel) return interaction.reply({ content: 'Entra a un canal de voz primero.', ephemeral: true });
+    if (!player) return interaction.reply({ content: 'No hay música en reproducción.', ephemeral: true });
 
-    if (!voiceChannel) {
-        return interaction.reply({ content: 'Debes estar en un canal de voz para controlar la música.', ephemeral: true });
-    }
+    try {
+        switch (interaction.customId) {
+            case 'skip':
+                if (queue.length > 1) {
+                    player.stop();
+                    await interaction.reply('⏭ Saltando a la siguiente canción.');
+                    await showMusicControls(interaction.channel);  // Actualiza el mensaje existente
+                } else {
+                    await interaction.reply('No hay más canciones.');
+                }
+                break;
 
-    if (!player) {
-        return interaction.reply({ content: 'No hay música en reproducción.', ephemeral: true });
-    }
+            case 'pause_resume':
+                if (player.state.status === AudioPlayerStatus.Playing) {
+                    player.pause();
+                    await interaction.reply('⏸ Pausada');
+                } else if (player.state.status === AudioPlayerStatus.Paused) {
+                    player.unpause();
+                    await interaction.reply('▶️ Reanudada');
+                }
+                break;
 
-    if (interaction.customId === 'skip') {
-        if (queue.length > 1) {
-            player.stop();
-            interaction.reply('⏭ Saltando a la siguiente canción.');
-            showMusicControls(interaction.channel);  // Volver a mostrar los botones después de saltar
-        } else {
-            interaction.reply('No hay más canciones en la cola.');
+            case 'shuffle':
+                shuffleQueue(queue);
+                await interaction.reply('🔀 Cola mezclada');
+                break;
+
+            case 'stop':
+                player.stop();
+                queue = [];
+                currentSong = null;
+                processes.forEach(child => child.kill()); // NEW: Limpiar procesos
+                processes.clear();
+                await interaction.reply('⏹ Detenido');
+                break;
+
+            case 'nowplaying':
+                if (currentSong) {
+                    await interaction.reply(`🎶 Reproduciendo ahora: ${currentSong.url}`);
+                    await showMusicControls(interaction.channel);  // Actualiza el mensaje existente
+                } else {
+                    await interaction.reply('No hay música en reproducción.');
+                }
+
+            case 'show_queue':
+                if (queue.length === 0) {
+                    return interaction.reply({ content: 'La cola está vacía.', ephemeral: true });
+                }
+        
+                const totalPages = Math.ceil(queue.length / 10);
+                const embed = createQueueEmbed(queue, 0);
+                const buttons = createPaginationButtons(0, totalPages);
+        
+                await interaction.reply({
+                    embeds: [embed],
+                    components: [buttons],
+                    ephemeral: true,
+                });
+                break;
+            
+            
+                case 'prev_page':
+                    case 'next_page': {
+                        const currentPage = parseInt(interaction.message.embeds[0].footer.text.split(' ')[1]) - 1;
+                        let newPage = currentPage;
+            
+                        if (interaction.customId === 'prev_page') {
+                            newPage = Math.max(0, currentPage - 1);
+                        } else if (interaction.customId === 'next_page') {
+                            newPage = Math.min(Math.ceil(queue.length / 10) - 1, currentPage + 1);
+                        }
+            
+                        const embed = createQueueEmbed(queue, newPage);
+                        const buttons = createPaginationButtons(newPage, Math.ceil(queue.length / 10));
+            
+                        await interaction.update({
+                            embeds: [embed],
+                            components: [buttons],
+                        });
+                        break;
+                    }
+            
+                    default:
+                        break;
+
+                        
+                
+                        function createQueueEmbed(queue, page = 0) {
+                            const songsPerPage = 10;
+                            const start = page * songsPerPage;
+                            const end = start + songsPerPage;
+                            const currentQueue = queue.slice(start, end);
+                            
+                        
+                            // Asegurar que siempre haya un valor válido para description
+                            const description = currentQueue.length > 0 
+                                ? currentQueue.map((song, index) => `${start + index + 1}. ${song.title || song.url}`).join('\n') 
+                                : "No hay canciones en la cola."; // Mensaje predeterminado
+                        
+                            const embed = {
+                                title: '🎶 Cola de Reproducción',
+                                description: description, // <-- ¡Campo siempre definido!
+                                color: 0x00ff00,
+                                footer: {
+                                    text: `Página ${page + 1} de ${Math.ceil(queue.length / songsPerPage)}`,
+                                },
+                            };
+                        
+                            return embed;
+                        }
+                        
+                        function createPaginationButtons(page, totalPages) {
+                            return new ActionRowBuilder().addComponents(
+                                new ButtonBuilder()
+                                    .setCustomId('prev_page')
+                                    .setLabel('⬅️ Anterior')
+                                    .setStyle(ButtonStyle.Secondary)
+                                    .setDisabled(page === 0),  // Deshabilitar si estamos en la primera página
+                                new ButtonBuilder()
+                                    .setCustomId('next_page')
+                                    .setLabel('Siguiente ➡️')
+                                    .setStyle(ButtonStyle.Secondary)
+                                    .setDisabled(page >= totalPages - 1)  // Deshabilitar si estamos en la última página
+                            );
+                        }
+    
         }
-    } else if (interaction.customId === 'pause_resume') {
-        if (player.state.status === AudioPlayerStatus.Playing) {
-            player.pause();
-            interaction.reply('⏸ Música pausada.');
-        } else if (player.state.status === AudioPlayerStatus.Paused) {
-            player.unpause();
-            interaction.reply('▶️ Música reanudada.');
-        } else {
-            interaction.reply('No hay música en reproducción.');
-        }
-    } else if (interaction.customId === 'shuffle') {
-        shuffleQueue(queue);
-        interaction.reply('🔀 La cola ha sido mezclada.');
-    } else if (interaction.customId === 'stop') {
-        if (player) {
-            player.stop();
-            queue = [];
-            currentSong = null;  // Limpiar la canción actual
-            interaction.reply('⏹ Música detenida y cola eliminada.');
-        }
-    } else if (interaction.customId === 'nowplaying') {
-        if (currentSong) {
-            interaction.reply(`🎶 Reproduciendo ahora: ${currentSong.url}`);
-            showMusicControls(interaction.channel);  // Volver a mostrar los botones al presionar "Now Playing"
-        } else {
-            interaction.reply('No se está reproduciendo ninguna canción en este momento.');
-        }
+    } catch (error) {
+        logger.error(`Error en interacción: ${error.message}`);
     }
 });
 
@@ -231,6 +415,8 @@ client.on('messageCreate', async message => {
 
     const args = message.content.slice(1).trim().split(/ +/);
     const command = args.shift().toLowerCase();
+
+    
 
     if (command === 'play') {
         const query = args.join(' ');
@@ -249,8 +435,8 @@ client.on('messageCreate', async message => {
         }
 
         if (query.includes('list=')) {
-            // Ejecutar yt-dlp para extraer todas las canciones de la playlist con un maxBuffer más grande
-            exec(`yt-dlp -j --flat-playlist "${query}"`, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
+            // ejecutar yt-dlp para obtener la lista de reproducción
+            exec(`yt-dlp -j --flat-playlist "${query}"`, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout) => {
                 if (error) {
                     console.error(`Error ejecutando yt-dlp: ${error.message}`);
                     return message.channel.send('Error al intentar obtener la playlist.');
@@ -272,6 +458,7 @@ client.on('messageCreate', async message => {
                     console.error(`Error al analizar la respuesta de yt-dlp: ${parseError.message}`);
                     message.channel.send('Error al intentar procesar la playlist.');
                 }
+                if (!isProcessing) playNextInQueue(voiceChannel);
             });
         } else if (query.startsWith('http')) {
             // Si el query es un enlace de YouTube individual, añadirlo directamente a la cola
@@ -316,7 +503,14 @@ client.on('messageCreate', async message => {
     }
 });
 
-
+// NEW: Manejar cierre limpio del bot
+process.on('SIGINT', () => {
+    logger.info('Apagando bot...');
+    processes.forEach(child => child.kill());
+    if (connection) connection.destroy();
+    client.destroy();
+    process.exit();
+});
 
 // Función para mezclar la cola
 function shuffleQueue(queue) {
