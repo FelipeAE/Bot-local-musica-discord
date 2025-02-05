@@ -509,4 +509,4 @@ function shuffleQueue(queue) {
 }
 
 
-client.login('token del bot aqui');
+client.login('token del bot');

@@ -545,6 +545,93 @@ client.on('messageCreate', async message => {
         
         message.channel.send(`🎵 Canción movida de posición ${oldPos} a ${newPos}`);
     }
+    else if (command === 'playnext') {
+        const query = args.join(' ');
+        if (!query) {
+            return message.channel.send('Debes proporcionar una URL de YouTube o un nombre de canción.');
+        }
+    
+        const voiceChannel = message.member.voice.channel;
+        if (!voiceChannel) {
+            return message.channel.send('Debes estar en un canal de voz para reproducir música.');
+        }
+    
+        const permissions = voiceChannel.permissionsFor(message.client.user);
+        if (!permissions.has(PermissionsBitField.Flags.Connect) || !permissions.has(PermissionsBitField.Flags.Speak)) {
+            return message.channel.send('No tengo permisos para unirme y hablar en tu canal de voz.');
+        }
+    
+        if (query.includes('list=')) {
+            // Lógica para playlists
+            exec(`yt-dlp -j --flat-playlist "${query}"`, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout) => {
+                if (error) {
+                    console.error(`Error en yt-dlp: ${error.message}`);
+                    return message.channel.send('Error al obtener la playlist.');
+                }
+    
+                try {
+                    const playlistData = stdout.trim().split('\n').map(JSON.parse);
+                    const songs = playlistData.map(item => ({
+                        url: `https://www.youtube.com/watch?v=${item.id}`,
+                        member: message.member,
+                        channel: message.channel
+                    }));
+    
+                    // Insertar después de la canción actual (posición 1 si hay una reproducción activa)
+                    const insertPosition = isProcessing ? 1 : 0;
+                    queue.splice(insertPosition, 0, ...songs);
+    
+                    message.channel.send(`⏭ Se añadieron ${songs.length} canciones para reproducir a continuación.`);
+    
+                    if (!isProcessing) {
+                        playNextInQueue(voiceChannel);
+                    }
+                } catch (parseError) {
+                    console.error(`Error al procesar la playlist: ${parseError.message}`);
+                    message.channel.send('Error al procesar la playlist.');
+                }
+            });
+        } else if (query.startsWith('http')) {
+            // Lógica para enlaces directos
+            const newSong = { url: query, member: message.member, channel: message.channel };
+            
+            // Insertar después de la canción actual (posición 1 si hay una reproducción activa)
+            const insertPosition = isProcessing ? 1 : 0;
+            queue.splice(insertPosition, 0, newSong);
+    
+            message.channel.send('⏭ Canción añadida para reproducir a continuación.');
+    
+            if (!isProcessing) {
+                playNextInQueue(voiceChannel);
+            }
+        } else {
+            // Búsqueda de YouTube
+            exec(`yt-dlp "ytsearch:${query}" --get-id`, (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`Error en la búsqueda: ${error.message}`);
+                    return message.channel.send('Error al buscar la canción.');
+                }
+    
+                const videoId = stdout.trim();
+                if (!videoId) {
+                    return message.channel.send('No se encontraron resultados.');
+                }
+    
+                const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                const newSong = { url: videoUrl, member: message.member, channel: message.channel };
+    
+                // Insertar después de la canción actual (posición 1 si hay una reproducción activa)
+                const insertPosition = isProcessing ? 1 : 0;
+                queue.splice(insertPosition, 0, newSong);
+    
+                message.channel.send(`⏭ Canción añadida para reproducir a continuación: ${videoUrl}`);
+    
+                if (!isProcessing) {
+                    playNextInQueue(voiceChannel);
+                }
+            });
+        }
+    }
 });
 
 // NEW: Manejar cierre limpio del bot
@@ -565,4 +652,4 @@ function shuffleQueue(queue) {
 }
 
 
-client.login('token del bot aqui');
+client.login('token del bot');
