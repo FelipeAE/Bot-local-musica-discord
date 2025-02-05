@@ -157,3 +157,151 @@ data.embeds[0].description[BASE_TYPE_REQUIRED]: This field is required
 30-01-25 17:58 [INFO]: Canción finalizada: https://www.youtube.com/watch?v=-WpnPSChVRQ
 30-01-25 17:59 [INFO]: Reproduciendo: https://www.youtube.com/watch?v=vd-rsahq_5k
 30-01-25 17:59 [INFO]: Canción finalizada: https://www.youtube.com/watch?v=vd-rsahq_5k
+31-01-25 16:52 [INFO]: Reproduciendo: https://www.youtube.com/watch?v=-WpnPSChVRQ
+31-01-25 16:53 [ERROR]: Error en interacción: The reply to this interaction has already been sent or deferred.
+31-01-25 16:53 [INFO]: Canción finalizada: https://www.youtube.com/watch?v=-WpnPSChVRQ
+31-01-25 16:53 [INFO]: Reproduciendo: https://www.youtube.com/watch?v=Jrg9KxGNeJY
+31-01-25 16:57 [INFO]: Canción finalizada: https://www.youtube.com/watch?v=Jrg9KxGNeJY
+31-01-25 16:57 [INFO]: Reproduciendo: https://www.youtube.com/watch?v=_6L6E7TLy10
+31-01-25 16:57 [ERROR]: Error en interacción: The reply to this interaction has already been sent or deferred.
+31-01-25 17:01 [INFO]: Canción finalizada: https://www.youtube.com/watch?v=_6L6E7TLy10
+31-01-25 17:01 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 -o "C:\Users\fiae\botprueba\temp_audio_c33e2b5c-cbff-4f45-a603-3a791e4703ea.mp3" "https://www.youtube.com/watch?v=3UBnlgyivcY"
+ERROR: [youtube] 3UBnlgyivcY: Sign in to confirm you�re not a bot. Use --cookies-from-browser or --cookies for the authentication. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp  for how to manually pass cookies. Also see  https://github.com/yt-dlp/yt-dlp/wiki/Extractors#exporting-youtube-cookies  for tips on effectively exporting YouTube cookies
+
+31-01-25 17:01 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 -o "C:\Users\fiae\botprueba\temp_audio_2f76de04-3fd0-487e-9b5e-81979cafc586.mp3" "https://www.youtube.com/watch?v=RrXp7jKybgg"
+ERROR: [youtube] RrXp7jKybgg: Sign in to confirm you�re not a bot. Use --cookies-from-browser or --cookies for the authentication. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp  for how to manually pass cookies. Also see  https://github.com/yt-dlp/yt-dlp/wiki/Extractors#exporting-youtube-cookies  for tips on effectively exporting YouTube cookies
+
+31-01-25 17:01 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 -o "C:\Users\fiae\botprueba\temp_audio_cb08c47b-bc43-4fe7-a750-537cf61a6db9.mp3" "https://www.youtube.com/watch?v=VUDqOIBY9FA"
+ERROR: [youtube] VUDqOIBY9FA: Sign in to confirm you�re not a bot. Use --cookies-from-browser or --cookies for the authentication. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp  for how to manually pass cookies. Also see  https://github.com/yt-dlp/yt-dlp/wiki/Extractors#exporting-youtube-cookies  for tips on effectively exporting YouTube cookies
+
+31-01-25 17:01 [INFO]: Reproduciendo: https://www.youtube.com/watch?v=pw2WQjqKpVM
+31-01-25 17:03 [INFO]: Canción finalizada: https://www.youtube.com/watch?v=pw2WQjqKpVM
+31-01-25 17:09 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_d27afd01-0697-47a8-b9ae-b95e12231ae6.mp3" "https://www.youtube.com/watch?v=fGo2GipojTc"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:09 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_cc010717-2797-42aa-b60e-87ad56549e91.mp3" "https://www.youtube.com/watch?v=ETTk83qis0w"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:09 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_d3ebc99a-17fc-4f79-948b-d0652e1f40b7.mp3" "https://www.youtube.com/watch?v=M9wHYiicY5I"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:09 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_30d36ae8-47bb-40b1-aa97-392e62ce760a.mp3" "https://www.youtube.com/watch?v=_6L6E7TLy10"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:09 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_869717c0-4786-489f-8b79-001655cff3a1.mp3" "https://www.youtube.com/watch?v=q4gqGhN0xnE"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:09 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_65fab518-9177-48c7-a622-7d1ebe64b82d.mp3" "https://www.youtube.com/watch?v=wbjbNGgL8p8"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:09 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_7242d236-5879-4d35-983b-28fd82eb6a97.mp3" "https://www.youtube.com/watch?v=DfSbCg22OWw"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_88f6b1e7-b782-4b05-a575-3dff3988ae7e.mp3" "https://www.youtube.com/watch?v=zJ_2NTthBnU"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_a563e4fa-4e35-4dfa-82e1-91d731fb9288.mp3" "https://www.youtube.com/watch?v=RrXp7jKybgg"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_5932357b-4a15-4de3-acec-760630d4246d.mp3" "https://www.youtube.com/watch?v=sPTOQd9E6gE"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_eb8a2ddd-7069-471b-9a9a-ea8790affbf0.mp3" "https://www.youtube.com/watch?v=lY_KORpQPdI"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_6c0755f7-24be-4b91-ae9c-df8eba75a88f.mp3" "https://www.youtube.com/watch?v=sIidB012kqw"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_1a0d2b6e-c855-4b2a-bc1b-5dc185988ffe.mp3" "https://www.youtube.com/watch?v=JMXaJvxGAxo"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_53d5a32e-5bac-41c4-b9e3-e3dddd64d68c.mp3" "https://www.youtube.com/watch?v=UCaexiaNWHA"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_7a744608-388b-4eab-abc1-c30b31f72535.mp3" "https://www.youtube.com/watch?v=JIZ12EQ2SFg"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_f97d55b6-ca41-410a-87ae-d1fe16c40058.mp3" "https://www.youtube.com/watch?v=1O6q2t1y6lY"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_31b246f2-aa41-4022-9a5c-d8a4f82d78b5.mp3" "https://www.youtube.com/watch?v=HyOdBU7lmSI"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_523bf831-ae49-4193-b239-5463c6ccf5de.mp3" "https://www.youtube.com/watch?v=Yj0XJlveb9Q"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_b8a288a7-25fd-498f-b955-3e93b69e2bc4.mp3" "https://www.youtube.com/watch?v=t4y-pQb-UDA"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_0d1cd394-5136-4979-9b19-899b39bf1371.mp3" "https://www.youtube.com/watch?v=GCNkLgRlgmQ"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_23cf5189-0629-4c7c-8059-15f590471e61.mp3" "https://www.youtube.com/watch?v=L6rvPc0ANvc"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_644b7426-eaad-4463-8aa8-61c2161d2fef.mp3" "https://www.youtube.com/watch?v=UcaOpfwgyoM"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_7b47ee0f-7afa-4942-b54c-d14873de40d9.mp3" "https://www.youtube.com/watch?v=-F3_Cj-fMWw"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_225150fd-a8e9-4fa1-9f41-8e7433de44ee.mp3" "https://www.youtube.com/watch?v=y1hufXK4FDc"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_9a25ca3f-cfea-4ca2-8c73-e854ea3a4e22.mp3" "https://www.youtube.com/watch?v=vIhIO1UrCLI"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_a53c0afa-b731-4afb-b18d-898edc706d30.mp3" "https://www.youtube.com/watch?v=ygyraTutBJg"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [ERROR]: Error yt-dlp: Command failed: yt-dlp -x --audio-format mp3 --cookies cookies.txt -o "C:\Users\fiae\botprueba\temp_audio_ab678699-ca29-4cef-80ae-70c255a0bffc.mp3" "https://www.youtube.com/watch?v=_H8mULP0XDc"
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+31-01-25 17:10 [INFO]: Apagando bot...
+31-01-25 17:14 [INFO]: Reproduciendo: https://www.youtube.com/watch?v=P7dLp2Eb7cg
+31-01-25 17:14 [ERROR]: Error en interacción: The reply to this interaction has already been sent or deferred.
+31-01-25 17:15 [INFO]: Canción finalizada: https://www.youtube.com/watch?v=P7dLp2Eb7cg
+31-01-25 17:15 [INFO]: Reproduciendo: https://www.youtube.com/watch?v=UCaexiaNWHA
+31-01-25 17:16 [INFO]: Canción finalizada: https://www.youtube.com/watch?v=UCaexiaNWHA
+31-01-25 17:16 [INFO]: Apagando bot...
+05-02-25 12:32 [INFO]: Reproduciendo: https://www.youtube.com/watch?v=-WpnPSChVRQ
+05-02-25 12:33 [INFO]: Canción finalizada: https://www.youtube.com/watch?v=-WpnPSChVRQ
+05-02-25 12:33 [INFO]: Reproduciendo: https://www.youtube.com/watch?v=-WpnPSChVRQ
+05-02-25 12:40 [INFO]: Reproduciendo: https://www.youtube.com/watch?v=-WpnPSChVRQ
+05-02-25 12:44 [INFO]: Reproduciendo: https://www.youtube.com/watch?v=-WpnPSChVRQ
+05-02-25 12:44 [ERROR]: Error en interacción: The reply to this interaction has already been sent or deferred.
+05-02-25 12:46 [INFO]: Canción finalizada: https://www.youtube.com/watch?v=-WpnPSChVRQ
+05-02-25 12:46 [INFO]: Reproduciendo: https://www.youtube.com/watch?v=vS_a8Edde8k
+05-02-25 12:47 [INFO]: Canción finalizada: https://www.youtube.com/watch?v=vS_a8Edde8k
+05-02-25 12:47 [INFO]: Reproduciendo: https://www.youtube.com/watch?v=vS_a8Edde8k
+05-02-25 12:50 [INFO]: Canción finalizada: https://www.youtube.com/watch?v=vS_a8Edde8k
+05-02-25 12:51 [INFO]: Reproduciendo: https://www.youtube.com/watch?v=SMCd5zrsFpE
+05-02-25 12:53 [INFO]: Canción finalizada: https://www.youtube.com/watch?v=SMCd5zrsFpE
+05-02-25 12:58 [INFO]: Apagando bot...

@@ -43,8 +43,6 @@ let buttonsSent = false;
 let controlMessage = null;  // Almacena el mensaje de controles
 let lastChannelId = null;   // Guarda el ID del último canal donde se enviaron controles 
 const processes = new Set(); // NEW: Trackear procesos hijos
-let repeatMode = 'none'; // 'none' | 'song' | 'playlist'
-let originalPlaylist = []; // Para guardar la playlist original
 const queueButton = new ButtonBuilder()
     .setCustomId('show_queue')
     .setLabel('🎵 Mostrar Cola')
@@ -61,34 +59,39 @@ const client = new Client({
     ]
 });
 
-// async function getVideoTitle(url) {
-//     return new Promise((resolve, reject) => {
-//         exec(`yt-dlp --get-title "${url}"`, (error, stdout, stderr) => {
-//             if (error) {
-//                 console.error(`Error obteniendo título: ${error.message}`);
-//                 reject('Título no disponible');
-//             } else {
-//                 resolve(stdout.trim());
-//             }
-//         });
-//     });
-// }
+async function getVideoTitle(url) {
+    return new Promise((resolve, reject) => {
+        exec(`yt-dlp --get-title "${url}"`, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Error obteniendo título: ${error.message}`);
+                reject('Título no disponible');
+            } else {
+                resolve(stdout.trim());
+            }
+        });
+    });
+}
 
-// async function addSongToQueue(url, member, channel, voiceChannel) {
-//     try {
-//         //const title = await getVideoTitle(url);  // Obtener el título
-//         queue.push({ url, title, member, channel });  // Guardar título en la cola
-//         // channel.send(`🎵 Canción añadida: **${title}**`);
+async function addSongToQueue(url, member, channel, voiceChannel, options = {}) {
+    try {
+        const title = await getVideoTitle(url);
+        queue.push({ url, title, member, channel });
 
-//         // Si no hay ninguna canción en reproducción, iniciar la reproducción
-//         if (!isProcessing) {
-//             playNextInQueue(voiceChannel);
-//         }
-//     } catch (error) {
-//         console.error('Error al obtener el título:', error);
-//         channel.send('No se pudo obtener el título de la canción.');
-//     }
-// }
+        // Solo enviar mensaje si no se desactiva en las opciones
+        if (options.sendMessage !== false) {
+            channel.send(`🎵 Canción añadida: **${title}**`);
+        }
+
+        if (!isProcessing) {
+            playNextInQueue(voiceChannel);
+        }
+    } catch (error) {
+        console.error('Error al obtener el título:', error);
+        if (options.sendMessage !== false) {
+            channel.send('No se pudo obtener el título de la canción.');
+        }
+    }
+}
 
 async function playNextInQueue(voiceChannel) {
     // NEW: Resetear controles al empezar nueva canción
@@ -194,13 +197,7 @@ async function playNextInQueue(voiceChannel) {
             player.on(AudioPlayerStatus.Idle, () => {
                 logger.info(`Canción finalizada: ${song.url}`);
                 fs.unlinkSync(tempPath);
-                if (repeatMode === 'song' && currentSong) {
-                    queue.unshift(currentSong); // Vuelve a añadir al principio
-                } else if (repeatMode === 'playlist' && originalPlaylist.length > 0) {
-                    queue = [...originalPlaylist]; // Restaura la playlist original
-                } else {
-                    queue.shift();
-                }
+                queue.shift();
                 isProcessing = false;
                 playNextInQueue(voiceChannel);
             });
@@ -259,15 +256,7 @@ async function showMusicControls(channel) {
     );
 
     const row2 = new ActionRowBuilder().addComponents(
-        queueButton,
-        new ButtonBuilder()
-            .setCustomId('repeat_song')
-            .setLabel('🔂 Repetir Canción')
-            .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-            .setCustomId('repeat_playlist')
-            .setLabel('🔁 Repetir Playlist')
-            .setStyle(ButtonStyle.Secondary)
+        queueButton
     );
 
     try {
@@ -288,11 +277,7 @@ async function showMusicControls(channel) {
 
 
 client.on('interactionCreate', async interaction => {
-    if (!interaction.isButton()){
-        if (interaction.replied || interaction.deferred) {
-            return; // Evitar responder dos veces
-        }
-    }
+    if (!interaction.isButton()) return;
 
     const voiceChannel = interaction.member.voice.channel;
     if (!voiceChannel) return interaction.reply({ content: 'Entra a un canal de voz primero.', ephemeral: true });
@@ -341,17 +326,6 @@ client.on('interactionCreate', async interaction => {
                 } else {
                     await interaction.reply('No hay música en reproducción.');
                 }
-            
-            case 'repeat_song':
-                repeatMode = repeatMode === 'song' ? 'none' : 'song';
-                await interaction.reply({ content: `Modo repetición: ${repeatMode === 'song' ? 'Canción activada' : 'Desactivada'}`, ephemeral: true });
-                break;
-
-            case 'repeat_playlist':
-                repeatMode = repeatMode === 'playlist' ? 'none' : 'playlist';
-                if (repeatMode === 'playlist') originalPlaylist = [...queue]; // Guarda copia de la playlist
-                await interaction.reply({ content: `Modo repetición: ${repeatMode === 'playlist' ? 'Playlist activada' : 'Desactivada'}`, ephemeral: true });
-                break;
 
             case 'show_queue':
                 if (queue.length === 0) {
@@ -451,79 +425,62 @@ client.on('messageCreate', async message => {
 
     if (command === 'play') {
         const query = args.join(' ');
-        if (!query) {
-            return message.channel.send('Debes proporcionar una URL de YouTube o un nombre de canción.');
-        }
-
+        if (!query) return message.channel.send('Debes proporcionar una URL de YouTube o un nombre de canción.');
+    
         const voiceChannel = message.member.voice.channel;
-        if (!voiceChannel) {
-            return message.channel.send('Debes estar en un canal de voz para reproducir música.');
-        }
-
+        if (!voiceChannel) return message.channel.send('Debes estar en un canal de voz para reproducir música.');
+    
         const permissions = voiceChannel.permissionsFor(message.client.user);
         if (!permissions.has(PermissionsBitField.Flags.Connect) || !permissions.has(PermissionsBitField.Flags.Speak)) {
             return message.channel.send('No tengo permisos para unirme y hablar en tu canal de voz.');
         }
-
+    
         if (query.includes('list=')) {
-            // ejecutar yt-dlp para obtener la lista de reproducción
             exec(`yt-dlp -j --flat-playlist "${query}"`, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout) => {
                 if (error) {
                     console.error(`Error ejecutando yt-dlp: ${error.message}`);
                     return message.channel.send('Error al intentar obtener la playlist.');
                 }
-
+    
                 try {
                     const playlistData = stdout.trim().split('\n').map(JSON.parse);
-                    for (const item of playlistData) {
+                    let addedCount = 0;
+    
+                    // Añadir canciones sin enviar mensajes individuales
+                    playlistData.forEach((item) => {
                         const videoUrl = `https://www.youtube.com/watch?v=${item.id}`;
-                        queue.push({ url: videoUrl, member: message.member, channel: message.channel });
-                    }
-
-                    message.channel.send(`Se añadieron ${playlistData.length} canciones a la cola.`);
-
+                        addSongToQueue(videoUrl, message.member, message.channel, voiceChannel, { sendMessage: false });
+                        addedCount++;
+                    });
+    
+                    message.channel.send(`✅ Se añadieron ${addedCount} canciones a la cola.`);
+    
                     if (!isProcessing) {
                         playNextInQueue(voiceChannel);
                     }
                 } catch (parseError) {
-                    console.error(`Error al analizar la respuesta de yt-dlp: ${parseError.message}`);
-                    message.channel.send('Error al intentar procesar la playlist.');
+                    console.error(`Error al analizar la playlist: ${parseError.message}`);
+                    message.channel.send('Error al procesar la playlist.');
                 }
-                if (!isProcessing) playNextInQueue(voiceChannel);
             });
         } else if (query.startsWith('http')) {
-            // Si el query es un enlace de YouTube individual, añadirlo directamente a la cola
-            queue.push({ url: query, member: message.member, channel: message.channel });
-
-            if (!isProcessing) {
-                playNextInQueue(voiceChannel);
-            } else {
-                message.channel.send('La canción ha sido añadida a la cola.');
-            }
+            // Añadir canción individual con mensaje
+            addSongToQueue(query, message.member, message.channel, voiceChannel, { sendMessage: true });
         } else {
-            // Buscar en YouTube el primer resultado usando yt-dlp
-            exec(`yt-dlp "ytsearch:${query}" --get-id`, (error, stdout, stderr) => {
+            // Búsqueda manual con mensaje
+            exec(`yt-dlp "ytsearch:${query}" --get-id`, (error, stdout) => {
                 if (error) {
-                    console.error(`Error ejecutando yt-dlp para búsqueda: ${error.message}`);
-                    return message.channel.send('Error al intentar buscar la canción en YouTube.');
+                    console.error(`Error en búsqueda: ${error.message}`);
+                    return message.channel.send('Error al buscar la canción.');
                 }
-
+    
                 const videoId = stdout.trim();
-                if (!videoId) {
-                    return message.channel.send('No se encontraron resultados para la búsqueda.');
-                }
-
+                if (!videoId) return message.channel.send('No se encontraron resultados.');
+    
                 const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-                queue.push({ url: videoUrl, member: message.member, channel: message.channel });
-
-                if (!isProcessing) {
-                    playNextInQueue(voiceChannel);
-                } else {
-                    message.channel.send(`La canción ha sido añadida a la cola: ${videoUrl}`);
-                }
+                addSongToQueue(videoUrl, message.member, message.channel, voiceChannel, { sendMessage: true });
             });
         }
-
     } else if (command === 'queue') {
         if (queue.length === 0) {
             message.channel.send('La cola está vacía.');
@@ -531,19 +488,6 @@ client.on('messageCreate', async message => {
             const queueList = queue.map((song, index) => `${index + 1}. ${song.url}`).join('\n');
             message.channel.send(`🎶 Cola de reproducción:\n${queueList}`);
         }
-    }
-    else if (command === 'move') {
-        if (queue.length < 2) return message.channel.send('Necesitas al menos 2 canciones en la cola.');
-        
-        const [oldPos, newPos] = args.map(Number).filter(n => !isNaN(n));
-        if (!oldPos || !newPos || oldPos < 1 || newPos < 1 || oldPos > queue.length || newPos > queue.length) {
-            return message.channel.send('Posiciones inválidas. Uso: `!move <posición actual> <nueva posición>`');
-        }
-    
-        const song = queue.splice(oldPos - 1, 1)[0];
-        queue.splice(newPos - 1, 0, song);
-        
-        message.channel.send(`🎵 Canción movida de posición ${oldPos} a ${newPos}`);
     }
 });
 
