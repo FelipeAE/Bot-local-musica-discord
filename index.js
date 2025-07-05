@@ -358,6 +358,20 @@ async function playNextInQueue(voiceChannel) {
     }
 
     if (queue.length === 0) {
+        // Reproducir mensaje de despedida antes de desconectar
+        if (connection && voiceChannel) {
+            logger.info('🎵 Cola vacía, reproduciendo mensaje de despedida...');
+            
+            // Buscar el último canal de texto usado
+            let lastTextChannel = null;
+            if (currentSong && currentSong.channel) {
+                lastTextChannel = currentSong.channel;
+            }
+            
+            // Reproducir despedida
+            await playGoodbyeMessage(voiceChannel, lastTextChannel);
+        }
+        
         if (connection) {
             connection.destroy();
             connection = null;
@@ -877,6 +891,12 @@ client.on('interactionCreate', async interaction => {
                 break;
 
             case 'stop':
+                // Reproducir despedida antes de detener
+                const voiceChannel = interaction.member.voice.channel;
+                if (voiceChannel && connection) {
+                    await playGoodbyeMessage(voiceChannel, interaction.channel);
+                }
+                
                 player.stop();
                 queue = [];
                 currentSong = null;
@@ -1487,12 +1507,12 @@ client.on('messageCreate', async message => {
                 },
                 {
                     name: '🔧 Utilidades',
-                    value: '`!test` - Verificar que el bot funciona\n`!help` - Mostrar esta ayuda',
+                    value: '`!test` - Verificar que el bot funciona\n`!goodbye` - Probar mensaje de despedida\n`!help` - Mostrar esta ayuda',
                     inline: false
                 },
                 {
                     name: '✨ Características',
-                    value: '• Soporte para playlists de YouTube\n• Detección automática de videos problemáticos\n• Reintento automático con formatos alternativos\n• Manejo de caracteres especiales (tildes, ñ, etc.)\n• Timeout inteligente para videos largos',
+                    value: '• Soporte para playlists de YouTube\n• Detección automática de videos problemáticos\n• Reintento automático con formatos alternativos\n• Manejo de caracteres especiales (tildes, ñ, etc.)\n• Timeout inteligente para videos largos\n• Mensaje de despedida automático al finalizar',
                     inline: false
                 }
             ],
@@ -1502,6 +1522,14 @@ client.on('messageCreate', async message => {
         };
         
         message.channel.send({ embeds: [helpEmbed] });
+        return;
+    } else if (command === 'goodbye' || command === 'bye') {
+        const voiceChannel = message.member.voice.channel;
+        if (!voiceChannel) {
+            return message.channel.send('Debes estar en un canal de voz para probar la despedida.');
+        }
+
+        await playGoodbyeMessage(voiceChannel, message.channel);
         return;
     } else if (command === 'test' || command === 't') {
         message.channel.send('🤖 Bot respondiendo correctamente y rápido!');
@@ -1797,4 +1825,63 @@ function handleProblematicVideo(song, stderrData, tempPath) {
     return { errorMessage, shouldRetry };
 }
 
-client.login(config.token);
+// Función para reproducir mensaje de despedida antes de desconectar
+async function playGoodbyeMessage(voiceChannel, textChannel) {
+    try {
+        logger.info('🔊 Reproduciendo mensaje de despedida...');
+        
+        // Crear una conexión temporal para la despedida
+        const goodbyeConnection = joinVoiceChannel({
+            channelId: voiceChannel.id,
+            guildId: voiceChannel.guild.id,
+            adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+        });
+
+        // Esperar a que la conexión esté lista
+        await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                reject(new Error('Timeout en conexión de despedida'));
+            }, 5000);
+
+            goodbyeConnection.on('stateChange', (oldState, newState) => {
+                if (newState.status === 'ready') {
+                    clearTimeout(timeout);
+                    resolve();
+                }
+            });
+        });
+
+        // Crear el audio resource con un mensaje de despedida
+        // En lugar de usar TTS real, podemos usar un archivo de audio simple
+        // o hacer que el bot "hable" con mensajes de texto
+        
+        // Opción 1: Mensaje de texto de despedida
+        if (textChannel) {
+            const goodbyeEmbed = {
+                color: 0xFF6B6B,
+                title: '👋 ¡Hasta luego!',
+                description: '🎵 **Gracias por usar el bot de música**\n' +
+                           '✨ ¡Espero haber alegrado tu día con buena música!\n' +
+                           '🔄 Puedes volver a llamarme cuando quieras con `!play`\n' +
+                           '💖 ¡Que tengas un excelente día!',
+                footer: { text: 'Bot desconectándose...' },
+                timestamp: new Date()
+            };
+            
+            await textChannel.send({ embeds: [goodbyeEmbed] });
+        }
+
+        // Opción 2: Si queremos usar un archivo de audio de despedida
+        // Podríamos agregar aquí la lógica para reproducir un archivo MP3 de despedida
+        // Por ahora usaremos un delay simulado
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Desconectar suavemente
+        goodbyeConnection.destroy();
+        logger.info('✅ Mensaje de despedida completado');
+        
+    } catch (error) {
+        logger.error(`Error en mensaje de despedida: ${error.message}`);
+        // Si hay error en la despedida, continuar con la desconexión normal
+    }
+}
