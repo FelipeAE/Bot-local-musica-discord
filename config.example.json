@@ -1,0 +1,6 @@
+{
+    "token": "TU_TOKEN_DE_DISCORD_AQUI",
+    "timezone": "America/Santiago",
+    "maxFileSize": 50000000,
+    "downloadTimeout": 60000
+}
