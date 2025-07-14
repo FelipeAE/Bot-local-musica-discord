@@ -83,18 +83,14 @@ async function getVideoInfo(url) {
             const title = normalizeUTF8(lines[0] || 'Título no disponible');
             const duration = lines[1] || null;
             
-            // Considerar video largo si es mayor a 4 horas (aumentado para pruebas)
-            const isLong = duration && parseDurationToSeconds(duration) > 14400; // 4 horas = 4 * 3600 segundos
-            
-            // Determinar si debería usar streaming (videos > 15 minutos)
-            const shouldStream = duration && parseDurationToSeconds(duration) > 900; // 15 minutos = 15 * 60 segundos
+            // Considerar video largo si es mayor a 1 hora (solo para información)
+            const isLong = duration && parseDurationToSeconds(duration) > 3600;
             
             resolve({ 
                 title: title, 
                 originalTitle: title,
                 duration: duration,
-                isLong: isLong,
-                shouldStream: shouldStream
+                isLong: isLong 
             });
         });
     });
@@ -113,33 +109,6 @@ function parseDurationToSeconds(duration) {
     return 0;
 }
 
-// Función para obtener URL de streaming directo
-async function getStreamUrl(url) {
-    return new Promise((resolve, reject) => {
-        const cleanedUrl = cleanYouTubeUrl(url);
-        
-        exec(`yt-dlp -f "bestaudio/best" --get-url --no-warnings "${cleanedUrl}"`, { 
-            timeout: 15000, 
-            encoding: 'utf8',
-            env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
-        }, (error, stdout, stderr) => {
-            if (error) {
-                logger.error(`Error obteniendo URL de stream: ${error.message}`);
-                reject(error);
-                return;
-            }
-
-            const streamUrl = stdout.trim().split('\n')[0];
-            if (streamUrl && streamUrl.startsWith('http')) {
-                logger.info(`✅ URL de streaming obtenida: ${streamUrl.substring(0, 50)}...`);
-                resolve(streamUrl);
-            } else {
-                reject(new Error('URL de streaming no válida'));
-            }
-        });
-    });
-}
-
 // Añadir canción a la cola (simplificado)
 async function addSongToQueue(url, member, channel, voiceChannel) {
     try {
@@ -153,9 +122,9 @@ async function addSongToQueue(url, member, channel, voiceChannel) {
         
         const videoInfo = await getVideoInfo(url);
         
-        // Rechazar videos muy largos (más de 4 horas)
+        // Rechazar videos muy largos (más de 1 hora)
         if (videoInfo.isLong) {
-            return channel.send('❌ Este video es demasiado largo (más de 4 horas). Solo se permiten videos de hasta 4 horas.');
+            return channel.send('❌ Este video es demasiado largo (más de 1 hora). Solo se permiten videos de hasta 1 hora.');
         }
         
         // Añadir a la cola
@@ -163,19 +132,17 @@ async function addSongToQueue(url, member, channel, voiceChannel) {
             url, 
             title: videoInfo.title, 
             duration: videoInfo.duration,
-            shouldStream: videoInfo.shouldStream, // Nuevo flag para streaming
             member, 
             channel 
         });
         
-        logger.info(`✅ Canción añadida: ${videoInfo.title} ${videoInfo.shouldStream ? '(Streaming)' : '(Descarga)'}`);
+        logger.info(`✅ Canción añadida: ${videoInfo.title}`);
         
-        // Mensaje de confirmación con indicador de método
-        const methodIndicator = videoInfo.shouldStream ? '🌐 Streaming' : '📥 Descarga';
+        // Mensaje de confirmación
         const addedEmbed = {
-            color: videoInfo.shouldStream ? 0x00AAFF : 0x00AA00,
+            color: 0x00AA00,
             title: '🎵 Canción Añadida',
-            description: `**${videoInfo.title}**${videoInfo.duration ? `\nDuración: ${videoInfo.duration}` : ''}\nMétodo: ${methodIndicator}`,
+            description: `**${videoInfo.title}**${videoInfo.duration ? `\nDuración: ${videoInfo.duration}` : ''}`,
             footer: { text: `Posición en cola: ${queue.length}` }
         };
         
@@ -249,90 +216,6 @@ async function playNextInQueue(voiceChannel) {
     const song = queue[0];
     currentSong = song;
 
-    // Si la canción no tiene información de duración (ej: de playlist), obtenerla primero
-    if (!song.duration) {
-        try {
-            logger.info(`🔍 Obteniendo información de duración para: ${song.title}`);
-            const videoInfo = await getVideoInfo(song.url);
-            song.duration = videoInfo.duration;
-            song.shouldStream = videoInfo.shouldStream;
-            song.isLong = videoInfo.isLong;
-            
-            // Rechazar si es demasiado largo
-            if (song.isLong) {
-                song.channel.send(`❌ Video demasiado largo (${song.title}) - Saltando...`);
-                queue.shift();
-                isProcessing = false;
-                playNextInQueue(voiceChannel);
-                return;
-            }
-            
-            logger.info(`✅ Duración obtenida: ${song.duration} - ${song.shouldStream ? 'Usará streaming' : 'Usará descarga'}`);
-        } catch (error) {
-            logger.error(`Error obteniendo duración: ${error.message}`);
-            // Continuar sin información de duración (usar descarga por defecto)
-            song.shouldStream = false;
-        }
-    }
-
-    // Decidir entre streaming y descarga
-    if (song.shouldStream) {
-        logger.info(`🌐 Iniciando streaming para: ${song.title}`);
-        await playStreamDirectly(song, voiceChannel);
-    } else {
-        logger.info(`📥 Iniciando descarga para: ${song.title}`);
-        await playWithDownload(song, voiceChannel);
-    }
-}
-
-// Función para reproducir mediante streaming directo
-async function playStreamDirectly(song, voiceChannel) {
-    try {
-        song.channel.send(`🌐 **Obteniendo stream**: ${song.title}`);
-        
-        const streamUrl = await getStreamUrl(song.url);
-        
-        song.channel.send(`🎵 **Iniciando streaming**: ${song.title}`);
-        
-        const resource = createAudioResource(streamUrl, {
-            inputType: StreamType.Arbitrary
-        });
-        
-        player = createAudioPlayer();
-        connection.subscribe(player);
-        player.play(resource);
-
-        player.on(AudioPlayerStatus.Playing, () => {
-            logger.info(`🌐 Streaming: ${song.title}`);
-            showMusicControls(song.channel);
-        });
-
-        player.on(AudioPlayerStatus.Idle, () => {
-            logger.info(`🌐 Stream finalizado: ${song.title}`);
-            queue.shift();
-            isProcessing = false;
-            playNextInQueue(voiceChannel);
-        });
-
-        player.on('error', error => {
-            logger.error(`❌ Error de streaming: ${error.message}`);
-            song.channel.send(`❌ Error en streaming. Intentando descarga como fallback...`);
-            // Fallback a descarga
-            song.shouldStream = false;
-            playWithDownload(song, voiceChannel);
-        });
-
-    } catch (error) {
-        logger.error(`❌ Error obteniendo stream: ${error.message}`);
-        song.channel.send(`❌ Error en streaming. Intentando descarga como fallback...`);
-        // Fallback a descarga
-        song.shouldStream = false;
-        await playWithDownload(song, voiceChannel);
-    }
-}
-
-// Función para reproducir mediante descarga (método original)
-async function playWithDownload(song, voiceChannel) {
     // Archivo temporal único
     const tempPath = path.join(__dirname, `temp_audio_${uuidv4()}.mp3`);
     
@@ -355,7 +238,7 @@ async function playWithDownload(song, voiceChannel) {
         stdio: ['pipe', 'pipe', 'pipe']
     });
 
-    // Timeout más largo para descargas (5 minutos)
+    // Timeout de 3 minutos para videos normales
     const timeoutId = setTimeout(() => {
         logger.error('Timeout en descarga - proceso terminado');
         child.kill('SIGKILL');
@@ -364,7 +247,7 @@ async function playWithDownload(song, voiceChannel) {
         queue.shift();
         isProcessing = false;
         playNextInQueue(voiceChannel);
-    }, 300000); // 5 minutos
+    }, 180000); // 3 minutos
 
     // Manejo de errores del proceso
     child.on('error', error => {
@@ -412,12 +295,12 @@ async function playWithDownload(song, voiceChannel) {
             player.play(resource);
 
             player.on(AudioPlayerStatus.Playing, () => {
-                logger.info(`📥 Reproduciendo: ${song.title}`);
+                logger.info(`Reproduciendo: ${song.title}`);
                 showMusicControls(song.channel);
             });
 
             player.on(AudioPlayerStatus.Idle, () => {
-                logger.info(`📥 Canción finalizada: ${song.title}`);
+                logger.info(`Canción finalizada: ${song.title}`);
                 cleanupTempFile(tempPath);
                 queue.shift();
                 isProcessing = false;
@@ -566,17 +449,15 @@ client.on('interactionCreate', async interaction => {
                     return interaction.reply({ content: 'La cola está vacía.', ephemeral: true });
                 }
 
-                const queueList = queue.slice(0, 10).map((song, index) => {
-                    const duration = song.duration ? ` \`[${song.duration}]\`` : ' `[--:--]`';
-                    const method = song.shouldStream ? '🌐' : '📥';
-                    return `${index + 1}. ${normalizeUTF8(song.title)}${duration} ${method}`;
-                }).join('\n');
+                const queueList = queue.slice(0, 10).map((song, index) => 
+                    `${index + 1}. ${normalizeUTF8(song.title)}`
+                ).join('\n');
                 
                 const queueEmbed = {
                     title: '🎶 Cola de Reproducción',
                     description: queueList + (queue.length > 10 ? `\n... y ${queue.length - 10} más` : ''),
                     color: 0x00ff00,
-                    footer: { text: `Total: ${queue.length} canciones | 🌐 = Streaming, 📥 = Descarga` }
+                    footer: { text: `Total: ${queue.length} canciones` }
                 };
 
                 await interaction.reply({ embeds: [queueEmbed], ephemeral: true });
@@ -637,13 +518,9 @@ client.on('messageCreate', async message => {
                             
                             if (videoId && !videoId.includes('[Private video]') && !videoId.includes('[Deleted video]')) {
                                 const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-                                
-                                // Para playlists, añadir sin información de duración (se detectará después)
-                                // Esto permite que el sistema híbrido funcione cuando se procese cada canción
                                 queue.push({ 
                                     url: videoUrl, 
-                                    title: title,
-                                    shouldStream: false, // Se determinará cuando se procese
+                                    title: title, 
                                     member: message.member, 
                                     channel: message.channel 
                                 });
@@ -704,20 +581,10 @@ client.on('messageCreate', async message => {
         if (queue.length === 0) {
             message.channel.send('La cola está vacía.');
         } else {
-            const queueList = queue.slice(0, 10).map((song, index) => {
-                const duration = song.duration ? ` \`[${song.duration}]\`` : ' `[--:--]`';
-                const method = song.shouldStream ? '🌐' : '📥';
-                return `${index + 1}. ${normalizeUTF8(song.title)}${duration} ${method}`;
-            }).join('\n');
-            
-            const queueEmbed = {
-                title: '🎶 Cola de Reproducción',
-                description: queueList + (queue.length > 10 ? `\n... y ${queue.length - 10} más` : ''),
-                color: 0x00ff00,
-                footer: { text: `Total: ${queue.length} canciones | 🌐 = Streaming, 📥 = Descarga` }
-            };
-            
-            message.channel.send({ embeds: [queueEmbed] });
+            const queueList = queue.slice(0, 10).map((song, index) => 
+                `${index + 1}. ${normalizeUTF8(song.title)}`
+            ).join('\n');
+            message.channel.send(`🎶 Cola de reproducción:\n${queueList}${queue.length > 10 ? `\n... y ${queue.length - 10} más` : ''}`);
         }
     }
 });
@@ -740,166 +607,6 @@ process.on('SIGINT', () => {
 });
 
 // Funciones auxiliares
-
-// Función para reproducir mediante streaming directo
-async function playStreamDirectly(song, voiceChannel) {
-    try {
-        song.channel.send(`🌐 **Obteniendo stream**: ${song.title}`);
-        
-        const streamUrl = await getStreamUrl(song.url);
-        
-        song.channel.send(`🎵 **Iniciando streaming**: ${song.title}`);
-        
-        const resource = createAudioResource(streamUrl, {
-            inputType: StreamType.Arbitrary
-        });
-        
-        player = createAudioPlayer();
-        connection.subscribe(player);
-        player.play(resource);
-
-        player.on(AudioPlayerStatus.Playing, () => {
-            logger.info(`🌐 Streaming: ${song.title}`);
-            showMusicControls(song.channel);
-        });
-
-        player.on(AudioPlayerStatus.Idle, () => {
-            logger.info(`🌐 Stream finalizado: ${song.title}`);
-            queue.shift();
-            isProcessing = false;
-            playNextInQueue(voiceChannel);
-        });
-
-        player.on('error', error => {
-            logger.error(`❌ Error de streaming: ${error.message}`);
-            song.channel.send(`❌ Error en streaming. Intentando descarga como fallback...`);
-            // Fallback a descarga
-            song.shouldStream = false;
-            playWithDownload(song, voiceChannel);
-        });
-
-    } catch (error) {
-        logger.error(`❌ Error obteniendo stream: ${error.message}`);
-        song.channel.send(`❌ Error en streaming. Intentando descarga como fallback...`);
-        // Fallback a descarga
-        song.shouldStream = false;
-        await playWithDownload(song, voiceChannel);
-    }
-}
-
-// Función para reproducir mediante descarga (método original)
-async function playWithDownload(song, voiceChannel) {
-    // Archivo temporal único
-    const tempPath = path.join(__dirname, `temp_audio_${uuidv4()}.mp3`);
-    
-    song.channel.send(`📥 **Descargando**: ${song.title}`);
-
-    // Comando yt-dlp simplificado para videos normales
-    const ytdlpArgs = [
-        '-f', 'bestaudio/best',
-        '--no-warnings',
-        '--no-playlist',
-        '--retries', '3',
-        '--socket-timeout', '30',
-        '-o', tempPath,
-        song.url
-    ];
-
-    logger.info(`Ejecutando: yt-dlp ${ytdlpArgs.join(' ')}`);
-    const child = spawn('yt-dlp', ytdlpArgs, {
-        env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
-        stdio: ['pipe', 'pipe', 'pipe']
-    });
-
-    // Timeout más largo para descargas (5 minutos)
-    const timeoutId = setTimeout(() => {
-        logger.error('Timeout en descarga - proceso terminado');
-        child.kill('SIGKILL');
-        cleanupTempFile(tempPath);
-        song.channel.send('⏰ **Timeout en descarga** - La descarga tardó demasiado.');
-        queue.shift();
-        isProcessing = false;
-        playNextInQueue(voiceChannel);
-    }, 300000); // 5 minutos
-
-    // Manejo de errores del proceso
-    child.on('error', error => {
-        clearTimeout(timeoutId);
-        logger.error(`Error en yt-dlp: ${error.message}`);
-        song.channel.send('❌ Error al descargar el audio.');
-        cleanupTempFile(tempPath);
-        queue.shift();
-        isProcessing = false;
-        playNextInQueue(voiceChannel);
-    });
-
-    // Manejo de finalización del proceso
-    child.on('close', (code) => {
-        clearTimeout(timeoutId);
-        processes.delete(child);
-        
-        if (code !== 0) {
-            logger.error(`yt-dlp terminó con código ${code}`);
-            song.channel.send('❌ Error al descargar el audio. Saltando canción...');
-            cleanupTempFile(tempPath);
-            queue.shift();
-            isProcessing = false;
-            playNextInQueue(voiceChannel);
-            return;
-        }
-
-        // Reproducir archivo descargado
-        try {
-            if (!fs.existsSync(tempPath)) {
-                throw new Error('Archivo no encontrado');
-            }
-
-            const stats = fs.statSync(tempPath);
-            if (stats.size < 10000) {
-                throw new Error('Archivo muy pequeño');
-            }
-
-            const resource = createAudioResource(fs.createReadStream(tempPath), {
-                inputType: StreamType.Arbitrary
-            });
-            
-            player = createAudioPlayer();
-            connection.subscribe(player);
-            player.play(resource);
-
-            player.on(AudioPlayerStatus.Playing, () => {
-                logger.info(`📥 Reproduciendo: ${song.title}`);
-                showMusicControls(song.channel);
-            });
-
-            player.on(AudioPlayerStatus.Idle, () => {
-                logger.info(`📥 Canción finalizada: ${song.title}`);
-                cleanupTempFile(tempPath);
-                queue.shift();
-                isProcessing = false;
-                playNextInQueue(voiceChannel);
-            });
-
-            player.on('error', error => {
-                logger.error(`Error de reproducción: ${error.message}`);
-                cleanupTempFile(tempPath);
-                queue.shift();
-                isProcessing = false;
-                playNextInQueue(voiceChannel);
-            });
-
-        } catch (error) {
-            logger.error(`Error de reproducción: ${error.message}`);
-            song.channel.send('❌ Error al reproducir el audio.');
-            cleanupTempFile(tempPath);
-            queue.shift();
-            isProcessing = false;
-            playNextInQueue(voiceChannel);
-        }
-    });
-
-    processes.add(child);
-}
 
 function shuffleQueue(queue) {
     for (let i = queue.length - 1; i > 0; i--) {

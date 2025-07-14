@@ -1,26 +1,31 @@
-# Bot de Música para Discord
+# Bot de Música para Discord - Versión Optimizada
 
-Un bot de música para Discord que utiliza yt-dlp para descargar y reproducir audio de YouTube de forma pseudo-local.
+Un bot de música para Discord optimizado que utiliza yt-dlp con sistema híbrido de streaming y descarga para una reproducción eficiente de audio de YouTube.
 
-## 🚀 Características
+## 🚀 Características Principales
 
-- ✅ Reproducción de música desde YouTube
-- ✅ Soporte para playlists
-- ✅ Cola de reproducción con paginación
-- ✅ Controles interactivos (botones)
-- ✅ Comando para saltar canciones
-- ✅ Función de mezclar cola
-- ✅ Gestión mejorada de archivos temporales
-- ✅ Logging detallado con timestamps
-- ✅ Manejo robusto de errores
-- ✅ **NUEVO**: Limpieza automática de URLs problemáticas
-- ✅ **NUEVO**: Validación de URLs de YouTube
-- ✅ **NUEVO**: Detección específica de tipos de error
-- ✅ **NUEVO**: Mensajes de error más informativos
-- ✅ **NUEVO**: Detección automática de videos largos con confirmación
-- ✅ **NUEVO**: Timeouts adaptativos según duración del video
-- ✅ **NUEVO**: Sistema de confirmación mejorado con embeds
-- ✅ **NUEVO**: Soporte para videos extremadamente largos (10+ horas)
+### ✨ Core Features
+- ✅ Reproducción de música desde YouTube (URLs y búsquedas)
+- ✅ Soporte completo para playlists
+- ✅ Cola de reproducción con duración y método de reproducción
+- ✅ Controles interactivos con botones Discord
+- ✅ Comandos de gestión de cola (saltar, mezclar, pausa/resume)
+- ✅ Sistema híbrido: Streaming + Descarga automática
+
+### 🎯 Optimizaciones Implementadas
+- ✅ **Código optimizado**: Reducido de ~2000 a ~500 líneas (75% menos)
+- ✅ **Sistema híbrido inteligente**: Streaming para videos >15min, descarga para ≤15min
+- ✅ **Gestión eficiente de memoria**: Menor uso de disco y RAM
+- ✅ **Detección automática de duración**: Selección automática del mejor método
+- ✅ **Compatibilidad con playlists**: Funciona con ambos métodos
+- ✅ **Límite de duración**: Videos hasta 4 horas (configurable)
+- ✅ **Logging detallado**: Información de método usado por cada video
+
+### 🌐 Sistema Híbrido Streaming/Descarga
+- **Streaming (🌐)**: Videos >15 minutos - Menor uso de disco, inicio más rápido
+- **Descarga (📥)**: Videos ≤15 minutos - Mayor estabilidad para videos cortos
+- **Fallback automático**: Si streaming falla, intenta descarga automáticamente
+- **Indicadores visuales**: La cola muestra método usado para cada canción
 
 ## 📋 Requisitos Previos
 
@@ -60,76 +65,110 @@ pip install --upgrade yt-dlp
    ```json
    {
        "token": "TU_TOKEN_DE_DISCORD_AQUI",
-       "timezone": "America/Santiago",
-       "maxFileSize": 50000000,
-       "downloadTimeout": 300000,
-       "downloadTimeoutLong": 1800000,
-       "longVideoDurationThreshold": 3600
+       "timezone": "America/Santiago"
    }
    ```
 
+## ⚙️ Configuración del Sistema Híbrido
+
+El bot está configurado con los siguientes parámetros optimizados:
+
+### Umbrales de Duración
+- **15 minutos**: Umbral para streaming vs descarga
+- **4 horas**: Límite máximo de duración de video
+- **Detección automática**: El bot decide automáticamente el mejor método
+
+### Timeouts
+- **Información de video**: 10 segundos
+- **Stream URL**: 15 segundos  
+- **Descarga**: 5 minutos
+- **Conexión de voz**: 10 segundos
+
+### Archivos Principales
+- `index_optimized.js`: Versión optimizada del bot (archivo principal)
+- `index.js`: Versión original completa (backup)
+- `config.json`: Configuración del bot
+
 ## 🎵 Comandos
 
-- `!play <URL/búsqueda>` - Reproduce música desde YouTube
-- `!playlong <URL>` - Reproduce videos largos (sin confirmación de duración)
-- `!playnext <URL/búsqueda>` - Añade una canción para reproducir después de la actual
-- `!queue` - Muestra la cola de reproducción
-- `!move <posición_actual> <nueva_posición>` - Mueve una canción en la cola
+### Comando Principal
+- `!play <URL/búsqueda>` - Reproduce música desde YouTube (URLs directas, búsquedas o playlists)
+- `!queue` - Muestra la cola de reproducción con duraciones y métodos
 
-### 📝 Notas sobre Videos Largos
+### Ejemplos de Uso
+```bash
+# URL directa
+!play https://www.youtube.com/watch?v=VIDEO_ID
 
-- Videos de más de 1 hora requieren confirmación con `!play`
-- Usa `!playlong` para saltear la confirmación
-- **Nuevo**: Timeout adaptativo - 5 min para videos normales, 30 min para largos
-- **Nuevo**: Sistema de confirmación mejorado con embeds y reacciones
-- Se muestra advertencia de duración en el título
-- Soporte para videos extremadamente largos (10+ horas)
+# Playlist completa
+!play https://www.youtube.com/playlist?list=PLAYLIST_ID
+
+# Búsqueda por nombre
+!play nombre de la canción
+
+# Ver cola con información detallada
+!queue
+```
 
 ## 🎛️ Controles Interactivos
 
-El bot incluye botones para:
+El bot incluye botones para control completo:
 - ⏭ **Saltar** - Salta a la siguiente canción
 - ⏸ **Pausar/▶️ Reanudar** - Pausa o reanuda la reproducción
 - 🔀 **Mezclar** - Mezcla aleatoriamente la cola
 - ⏹ **Detener** - Detiene la reproducción y limpia la cola
-- 🎶 **Now Playing** - Muestra la canción actual
-- 🎵 **Mostrar Cola** - Muestra la cola con paginación
+- 🎶 **Now Playing** - Muestra la canción actual con duración
+- 📋 **Cola** - Muestra la cola con duraciones y métodos (🌐/📥)
 
-## 🔧 Mejoras Implementadas
+### Ejemplo de Cola Mejorada
+```
+🎶 Cola de Reproducción
+1. Mi canción favorita [03:45] 📥
+2. Video largo de Pokemon [22:17] 🌐
+3. Otra canción [04:12] 📥
+4. Video sin duración aún [--:--] 📥
 
-### ✅ Correcciones de Bugs
-- **Funciones mal ubicadas**: Movidas las funciones `createQueueEmbed` y `createPaginationButtons` fuera del switch statement
-- **Manejo de archivos temporales**: Implementada función `cleanupTempFile()` para limpieza robusta
-- **Gestión de títulos**: Reactivada la función `getVideoTitle()` para obtener títulos reales
-- **Validación de archivos**: Verificación de existencia antes de eliminar archivos temporales
+Total: 4 canciones | 🌐 = Streaming, 📥 = Descarga
+```
 
-### 🔒 Seguridad
-- **Token protegido**: Movido a archivo de configuración separado
-- **Archivo .gitignore**: Creado para proteger información sensible
-- **Configuración ejemplo**: Archivo `config.example.json` para facilitar setup
+## 🔧 Mejoras y Optimizaciones Implementadas
+
+### 🎯 Optimización del Código (v2.0)
+- **Reducción masiva**: De ~2000 líneas a ~500 líneas (75% menos código)
+- **Eliminación de funciones no utilizadas**: Removidos comandos y características no esenciales
+- **Código más limpio**: Funciones simplificadas y mejor organizadas
+- **Mantenimiento mejorado**: Más fácil de entender y modificar
+
+### 🌐 Sistema Híbrido Streaming/Descarga
+- **Detección inteligente**: Automáticamente elige el mejor método según duración del video
+- **Umbral de 15 minutos**: Videos >15min usan streaming, ≤15min usan descarga
+- **Streaming directo**: Obtiene URL de stream de yt-dlp para videos largos
+- **Fallback robusto**: Si streaming falla, automáticamente intenta descarga
+- **Compatibilidad playlist**: Sistema híbrido funciona perfectamente con playlists
+
+### 📊 Información Detallada en Cola
+- **Duraciones visibles**: Cada canción muestra su duración [MM:SS] o [HH:MM:SS]
+- **Indicadores de método**: 🌐 para streaming, 📥 para descarga
+- **Estado en tiempo real**: Muestra [--:--] para canciones pendientes de procesar
+- **Footer informativo**: Explica los símbolos y cuenta total de canciones
 
 ### 🚀 Mejoras de Rendimiento
-- **Mejor logging**: Uso consistente de winston logger en lugar de console.log
-- **Timeout configurable**: Timeout de descarga configurable desde config.json
-- **Manejo de errores mejorado**: Mejor gestión de errores en todas las operaciones
+- **Menor uso de memoria**: Streaming evita descargar archivos grandes
+- **Inicio más rápido**: Videos largos empiezan inmediatamente con streaming
+- **Gestión de archivos mejorada**: Solo descarga cuando es necesario
+- **Timeouts optimizados**: 5 minutos para descargas, 15 segundos para streams
 
-### 🎯 Funcionalidad Mejorada
-- **Títulos en búsquedas**: Obtiene tanto ID como título en búsquedas de YouTube
-- **Cola con títulos**: Muestra títulos reales en lugar de URLs cuando es posible
-- **Mejor feedback**: Mensajes más informativos al añadir canciones
+### 🔄 Mejoras en Reconexión
+- **Estado de conexión mejorado**: Mejor detección de desconexiones
+- **Reconexión automática**: Se conecta automáticamente al usar !play después de stop
+- **Limpieza completa**: Stop button limpia todo el estado correctamente
+- **Gestión de procesos**: Termina correctamente todos los procesos hijos
 
-### 🆕 Nuevas Mejoras para Videos Largos
-- **Detección automática**: Identifica videos de más de 1 hora automáticamente
-- **Confirmación mejorada**: Sistema con embeds visuales y reacciones
-- **Timeouts adaptativos**: 5 minutos para videos normales, 30 minutos para largos
-- **Mensajes específicos**: Diferente feedback según el tipo de video
-- **Bot "a todo terreno"**: Soporte completo para videos extremadamente largos
-- **Información de duración**: Muestra duración exacta y advertencias visuales
-
-### 🔧 Configuración Avanzada
-- `downloadTimeout`: Timeout para videos normales (300000ms = 5 min)
-- `downloadTimeoutLong`: Timeout para videos largos (1800000ms = 30 min)
-- `longVideoDurationThreshold`: Umbral para considerar un video "largo" (3600s = 1 hora)
+### 🎵 Límites y Configuración
+- **Límite de duración**: Videos hasta 4 horas (configurable en código)
+- **Detección de duplicados**: Previene añadir la misma canción múltiples veces
+- **Validación de URLs**: Limpieza y validación automática de URLs de YouTube
+- **Manejo de errores robusto**: Fallbacks para diferentes tipos de errores
 
 ## 🐛 Solución de Problemas Comunes
 
@@ -139,38 +178,67 @@ El bot incluye botones para:
 pip install --upgrade yt-dlp
 ```
 
-### Error "Unsupported URL" / URLs con caracteres especiales
-El bot ahora incluye limpieza automática de URLs que:
-- Decodifica caracteres especiales (`%5B`, `%5D`, etc.)
-- Remueve caracteres problemáticos como `[` y `]`
-- Valida que las URLs sean de YouTube válidas
-- Reconstruye URLs limpias automáticamente
+### Videos que no se pueden reproducir
+El bot automáticamente:
+- Detecta videos privados/eliminados y los salta
+- Usa fallback de descarga si streaming falla
+- Muestra mensajes informativos sobre el problema
 
-### Problemas con cookies
-Si tienes problemas de autenticación, puedes usar cookies de YouTube:
-```bash
-# Exportar cookies desde tu navegador y guardar como cookies.txt
-# Usar youtube.com (no www.youtube.com) al exportar
-```
+### Problemas de conexión después de usar Stop
+- El bot ahora se reconecta automáticamente al usar `!play`
+- El botón Stop limpia correctamente todo el estado
+- No es necesario reiniciar el bot
 
-### Archivo de audio muy pequeño
-Este error indica que la descarga falló. Posibles soluciones:
-1. Verificar que yt-dlp esté actualizado
-2. Comprobar la conectividad a internet
-3. Verificar que la URL sea válida
+### Rendimiento con videos largos
+- Videos >15min usan streaming (menor uso de memoria)
+- Videos ≤15min usan descarga (mayor estabilidad)
+- El sistema elige automáticamente el mejor método
 
-### Videos con restricciones
-El bot ahora detecta automáticamente estos tipos de error:
-- Videos privados o eliminados
-- Videos con restricción de edad
-- Videos no disponibles en tu región
-- Problemas de acceso (Error 403)
+## 📊 Estadísticas de Optimización
+
+### Mejoras de Código
+- **Líneas de código**: ~2000 → ~500 (75% reducción)
+- **Funciones principales**: Simplificadas y optimizadas
+- **Comandos activos**: Solo los esenciales (`!play`, `!queue`)
+- **Controles**: 6 botones interactivos principales
+
+### Mejoras de Rendimiento
+- **Streaming**: Videos largos inician inmediatamente
+- **Memoria**: Menos uso de disco para videos >15min
+- **Estabilidad**: Fallback automático entre métodos
+- **Información**: Cola muestra duración y método para cada canción
+
+## 🎮 Cómo Usar el Bot Optimizado
+
+1. **Ejecutar**: `node index_optimized.js` o `npm start`
+2. **Reproducir**: `!play [URL o búsqueda]`
+3. **Ver cola**: `!queue` o botón 📋
+4. **Controlar**: Usar los botones interactivos
+5. **Playlists**: El bot procesará automáticamente todas las canciones
+
+El bot elegirá automáticamente el mejor método para cada video según su duración.
 
 ## 📝 Scripts Disponibles
 
-- `npm start` - Inicia el bot
-- `npm run dev` - Inicia el bot con nodemon (reinicio automático)
-- `npm run stop` - Detiene el bot
+- `npm start` - Inicia el bot optimizado
+- `node index_optimized.js` - Ejecuta directamente la versión optimizada
+- `node index.js` - Ejecuta la versión original (backup)
+
+## 🔄 Historial de Versiones
+
+### v2.0 - Bot Optimizado con Sistema Híbrido
+- ✅ Código reducido 75% (2000→500 líneas)
+- ✅ Sistema híbrido streaming/descarga
+- ✅ Cola con duraciones y métodos
+- ✅ Umbral de 15 minutos para streaming
+- ✅ Reconexión automática mejorada
+- ✅ Compatibilidad completa con playlists
+
+### v1.0 - Bot Original Completo
+- ✅ Funcionalidad completa con múltiples comandos
+- ✅ Sistema de descarga robusto
+- ✅ Manejo de videos largos con confirmación
+- ✅ Controles avanzados y configuración detallada
 
 ## 🔗 Enlaces Útiles
 

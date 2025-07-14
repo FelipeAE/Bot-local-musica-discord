@@ -311,3 +311,248 @@ ERROR: Cookies file must be Netscape formatted, not JSON. See  https://github.co
 05-02-25 15:21 [INFO]: Canción finalizada: https://www.youtube.com/watch?v=-WpnPSChVRQ
 05-02-25 15:21 [INFO]: Apagando bot...
 05-07-25 00:00 [INFO]: Limpieza inicial completada
+05-07-25 00:01 [INFO]: Limpieza inicial completada
+05-07-25 00:02 [INFO]: Limpieza inicial completada
+05-07-25 00:03 [INFO]: Limpieza inicial completada
+05-07-25 00:07 [INFO]: Limpieza inicial completada
+05-07-25 00:08 [INFO]: Limpieza inicial completada
+05-07-25 00:08 [INFO]: Limpieza inicial completada
+05-07-25 00:09 [INFO]: Limpieza inicial completada
+05-07-25 00:09 [INFO]: Limpieza inicial completada
+05-07-25 00:09 [INFO]: Limpieza inicial completada
+05-07-25 00:17 [INFO]: Limpieza inicial completada
+05-07-25 00:18 [INFO]: Limpieza inicial completada
+05-07-25 00:18 [INFO]: Limpieza inicial completada
+05-07-25 00:19 [INFO]: Limpieza inicial completada
+05-07-25 00:20 [INFO]: Limpieza inicial completada
+05-07-25 00:24 [INFO]: Limpieza inicial completada
+05-07-25 00:25 [INFO]: Limpieza inicial completada
+05-07-25 00:28 [INFO]: Limpieza inicial completada
+05-07-25 00:33 [INFO]: Buscando en YouTube: "welcome to japari park"
+05-07-25 00:33 [INFO]: Respuesta de yt-dlp: "Yxg-AADx39w
+Kemono Friends - Opening | Welcome to Japari Park"
+05-07-25 00:33 [INFO]: Video ID obtenido: "Yxg-AADx39w", Título: "Kemono Friends - Opening | Welcome to Japari Park"
+05-07-25 00:33 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_c78b4050-e0a6-43e3-bf16-9abacd469613.mp3 --retries 3 --fragment-retries 3 --socket-timeout 30 https://www.youtube.com/watch?v=Yxg-AADx39w
+05-07-25 00:33 [INFO]: Reproduciendo: https://www.youtube.com/watch?v=Yxg-AADx39w
+05-07-25 00:35 [INFO]: Canción finalizada: https://www.youtube.com/watch?v=Yxg-AADx39w
+05-07-25 00:35 [INFO]: Archivo temporal eliminado: C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_c78b4050-e0a6-43e3-bf16-9abacd469613.mp3
+05-07-25 00:35 [INFO]: 🎵 Cola vacía, reproduciendo mensaje de despedida...
+05-07-25 00:35 [INFO]: 🔊 Reproduciendo mensaje de despedida...
+05-07-25 00:35 [ERROR]: Error en mensaje de despedida: Timeout en conexión de despedida
+05-07-25 00:35 [INFO]: Apagando bot...
+10-07-25 17:44 [INFO]: Limpieza inicial completada
+10-07-25 17:44 [INFO]: ✅ Bot conectado como Bot Cunny#4482
+10-07-25 17:44 [INFO]: 🆔 ID del bot: 1360388627410059264
+10-07-25 17:44 [INFO]: 🌐 Conectado a 2 servidor(es)
+10-07-25 17:44 [INFO]: 👥 Monitoreando 2 usuarios
+10-07-25 17:44 [INFO]: 🎵 Bot de música listo para usar!
+10-07-25 17:44 [INFO]: 📍 Servidor: Ｃｈａｌｄｅａ　カルデア (ID: 314891996747661323)
+10-07-25 17:44 [INFO]:   ✅ Permisos básicos: OK
+10-07-25 17:44 [INFO]: 📍 Servidor: Estudio (ID: 1052780240256110672)
+10-07-25 17:44 [INFO]:   ✅ Permisos básicos: OK
+10-07-25 17:44 [INFO]: 🎮 Estado del bot configurado
+10-07-25 17:46 [INFO]: Limpieza inicial completada
+10-07-25 17:46 [INFO]: ✅ Bot conectado como Bot Cunny#4482
+10-07-25 17:46 [INFO]: 🆔 ID del bot: 1360388627410059264
+10-07-25 17:46 [INFO]: 🌐 Conectado a 2 servidor(es)
+10-07-25 17:46 [INFO]: 👥 Monitoreando 2 usuarios
+10-07-25 17:46 [INFO]: 🎵 Bot de música listo para usar!
+10-07-25 17:46 [INFO]: 📍 Servidor: Ｃｈａｌｄｅａ　カルデア (ID: 314891996747661323)
+10-07-25 17:46 [INFO]:   ✅ Permisos básicos: OK
+10-07-25 17:46 [INFO]: 📍 Servidor: Estudio (ID: 1052780240256110672)
+10-07-25 17:46 [INFO]:   ✅ Permisos básicos: OK
+10-07-25 17:46 [INFO]: 🎮 Estado del bot configurado
+10-07-25 17:47 [INFO]: Buscando en YouTube: "la vida es un carrusel"
+10-07-25 17:47 [ERROR]: Error ejecutando yt-dlp para búsqueda: Command failed: yt-dlp "ytsearch1:la vida es un carrusel" --print "%(id)s" --print "%(title)s" --no-warnings
+
+10-07-25 17:51 [INFO]: Limpieza inicial completada
+10-07-25 17:51 [INFO]: ✅ Bot conectado como Bot Cunny#4482
+10-07-25 17:51 [INFO]: 🆔 ID del bot: 1360388627410059264
+10-07-25 17:51 [INFO]: 🌐 Conectado a 2 servidor(es)
+10-07-25 17:51 [INFO]: 👥 Monitoreando 2 usuarios
+10-07-25 17:51 [INFO]: 🎵 Bot de música listo para usar!
+10-07-25 17:51 [INFO]: 📍 Servidor: Ｃｈａｌｄｅａ　カルデア (ID: 314891996747661323)
+10-07-25 17:51 [INFO]:   ✅ Permisos básicos: OK
+10-07-25 17:51 [INFO]: 📍 Servidor: Estudio (ID: 1052780240256110672)
+10-07-25 17:51 [INFO]:   ✅ Permisos básicos: OK
+10-07-25 17:51 [INFO]: 🎮 Estado del bot configurado
+10-07-25 17:51 [INFO]: Buscando en YouTube: "la vida es un carrusel"
+10-07-25 17:52 [ERROR]: Error ejecutando yt-dlp para búsqueda: Command failed: yt-dlp "ytsearch1:la vida es un carrusel" --print "%(id)s" --print "%(title)s" --no-warnings
+
+13-07-25 19:00 [INFO]: ✅ Bot conectado como Bot Cunny#4482
+13-07-25 19:00 [INFO]: 🎵 Bot de música optimizado listo para usar!
+13-07-25 19:01 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=l18A5BOTlzE
+13-07-25 19:01 [INFO]: ✅ Canción añadida: Five Nights at Freddy's 1 Song - The Living Tombstone
+13-07-25 19:01 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_e6d9816e-a955-46fd-8334-b582cd57742b.mp3 https://www.youtube.com/watch?v=l18A5BOTlzE
+13-07-25 19:01 [INFO]: Reproduciendo: Five Nights at Freddy's 1 Song - The Living Tombstone
+13-07-25 19:04 [INFO]: Apagando bot...
+13-07-25 19:04 [INFO]: ✅ Bot conectado como Bot Cunny#4482
+13-07-25 19:04 [INFO]: 🎵 Bot de música optimizado listo para usar!
+13-07-25 19:04 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=Zl5Rk0uLGDI
+13-07-25 19:04 [INFO]: ✅ Canción añadida: MONTAGEM TOMADA (Slowed) | La vida es un carrusel
+13-07-25 19:04 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_0d50592f-e3f8-41eb-a5ad-d2c01523b392.mp3 https://www.youtube.com/watch?v=Zl5Rk0uLGDI
+13-07-25 19:05 [INFO]: Reproduciendo: MONTAGEM TOMADA (Slowed) | La vida es un carrusel
+13-07-25 19:05 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=gxTNGs7nhVM
+13-07-25 19:05 [INFO]: ✅ Canción añadida: La vida es una lenteja o la tomas o la dejas |
+13-07-25 19:05 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=EGA4vQd1Cyk
+13-07-25 19:06 [INFO]: ✅ Canción añadida: Dragon Ball Z Dokkan Battle: AGL LR Super Saiyan Blue Goku & Vegeta Intro OST (Extended)
+13-07-25 19:08 [INFO]: Apagando bot...
+13-07-25 19:08 [INFO]: ✅ Bot conectado como Bot Cunny#4482
+13-07-25 19:08 [INFO]: 🎵 Bot de música optimizado listo para usar!
+13-07-25 19:09 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=gxTNGs7nhVM
+13-07-25 19:09 [INFO]: ✅ Canción añadida: La vida es una lenteja o la tomas o la dejas |
+13-07-25 19:09 [INFO]: Conectando al canal de voz...
+13-07-25 19:09 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:09 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_d9decc47-4ed1-4e24-9fd1-c3478528260c.mp3 https://www.youtube.com/watch?v=gxTNGs7nhVM
+13-07-25 19:09 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:09 [INFO]: Reproduciendo: La vida es una lenteja o la tomas o la dejas |
+13-07-25 19:09 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=EGA4vQd1Cyk
+13-07-25 19:09 [INFO]: ✅ Canción añadida: Dragon Ball Z Dokkan Battle: AGL LR Super Saiyan Blue Goku & Vegeta Intro OST (Extended)
+13-07-25 19:09 [INFO]: Canción añadida a la cola. Cola actual: 2 elementos
+13-07-25 19:10 [INFO]: Reproduciendo: La vida es una lenteja o la tomas o la dejas |
+13-07-25 19:10 [INFO]: Canción finalizada: La vida es una lenteja o la tomas o la dejas |
+13-07-25 19:10 [INFO]: Archivo temporal eliminado: C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_d9decc47-4ed1-4e24-9fd1-c3478528260c.mp3
+13-07-25 19:10 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_26001d10-2496-41eb-98f6-a8249430fc10.mp3 https://www.youtube.com/watch?v=EGA4vQd1Cyk
+13-07-25 19:10 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:10 [INFO]: Reproduciendo: Dragon Ball Z Dokkan Battle: AGL LR Super Saiyan Blue Goku & Vegeta Intro OST (Extended)
+13-07-25 19:11 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=tzb2nGOwXpI
+13-07-25 19:12 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=YMEblRM4pGc
+13-07-25 19:12 [INFO]: Conectando al canal de voz...
+13-07-25 19:12 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:12 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_d2cf656a-cddb-4d54-88cd-ca08a0167aac.mp3 https://www.youtube.com/watch?v=SYTS2sJWcIs
+13-07-25 19:12 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:12 [INFO]: Reproduciendo: Pokémon HeartGold & SoulSilver - Champion & Red Battle Music (HQ)
+13-07-25 19:13 [INFO]: Canción finalizada: Pokémon HeartGold & SoulSilver - Champion & Red Battle Music (HQ)
+13-07-25 19:13 [INFO]: Archivo temporal eliminado: C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_d2cf656a-cddb-4d54-88cd-ca08a0167aac.mp3
+13-07-25 19:13 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_9ffbc3bd-354d-4fbd-8aec-fb1c8cb5f297.mp3 https://www.youtube.com/watch?v=bhfnjWlJhRU
+13-07-25 19:13 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:13 [INFO]: Reproduciendo: Pokemon- Mystery Dungeon Explorers of Sky- Exploration Team Theme- Music
+13-07-25 19:14 [INFO]: Canción finalizada: Pokemon- Mystery Dungeon Explorers of Sky- Exploration Team Theme- Music
+13-07-25 19:14 [INFO]: Archivo temporal eliminado: C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_9ffbc3bd-354d-4fbd-8aec-fb1c8cb5f297.mp3
+13-07-25 19:14 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_6f64ae90-8c04-4e9f-a4a7-af6bd96231fa.mp3 https://www.youtube.com/watch?v=mVRIFSfQpxQ
+13-07-25 19:15 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:15 [INFO]: Reproduciendo: Pokemon- Mystery Dungeon Explorers of Sky- Miracle Sea- Music
+13-07-25 19:17 [INFO]: Canción finalizada: Pokemon- Mystery Dungeon Explorers of Sky- Miracle Sea- Music
+13-07-25 19:17 [INFO]: Archivo temporal eliminado: C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_6f64ae90-8c04-4e9f-a4a7-af6bd96231fa.mp3
+13-07-25 19:17 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_775d63b7-b970-4f50-8c47-b3397ce0510a.mp3 https://www.youtube.com/watch?v=vuXhbYGK19U
+13-07-25 19:17 [ERROR]: yt-dlp terminó con código 1
+13-07-25 19:17 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_3c6bcce4-9a77-4023-9bba-de76f79e073e.mp3 https://www.youtube.com/watch?v=qLAiBRKy4EA
+13-07-25 19:17 [ERROR]: yt-dlp terminó con código 1
+13-07-25 19:17 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_73735eb7-f7d7-404b-98fe-7d9be5bbc664.mp3 https://www.youtube.com/watch?v=A3S95wIPQeU
+13-07-25 19:17 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:17 [INFO]: Reproduciendo: Pokemon- Mystery Dungeon Explorers of Sky- Saw Something Again- Music
+13-07-25 19:20 [INFO]: Canción finalizada: Pokemon- Mystery Dungeon Explorers of Sky- Saw Something Again- Music
+13-07-25 19:20 [INFO]: Archivo temporal eliminado: C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_73735eb7-f7d7-404b-98fe-7d9be5bbc664.mp3
+13-07-25 19:20 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_e9e3f53f-cbc0-456a-8d5c-9c190efe9cdc.mp3 https://www.youtube.com/watch?v=LKOG5UM202Y
+13-07-25 19:20 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:20 [INFO]: Reproduciendo: Pokémon HeartGold & SoulSilver - Rival Battle Music (HQ)
+13-07-25 19:22 [INFO]: Apagando bot...
+13-07-25 19:23 [INFO]: ✅ Bot conectado como Bot Cunny#4482
+13-07-25 19:23 [INFO]: 🎵 Bot de música optimizado listo para usar!
+13-07-25 19:24 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=tzb2nGOwXpI
+13-07-25 19:24 [INFO]: ✅ Canción añadida: Nostalgic Pokémon music but it's my favorite start the day
+13-07-25 19:24 [INFO]: Conectando al canal de voz...
+13-07-25 19:24 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:24 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_91454279-1ed6-4ebd-a370-f11b849ae998.mp3 https://www.youtube.com/watch?v=tzb2nGOwXpI
+13-07-25 19:25 [INFO]: Apagando bot...
+13-07-25 19:25 [INFO]: ✅ Bot conectado como Bot Cunny#4482
+13-07-25 19:25 [INFO]: 🎵 Bot de música optimizado listo para usar!
+13-07-25 19:26 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=YMEblRM4pGc
+13-07-25 19:26 [INFO]: ✅ Canción añadida: Chill & Relaxing Pokémon Music Mix
+13-07-25 19:26 [INFO]: Conectando al canal de voz...
+13-07-25 19:26 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:26 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_fa83f7a6-8a18-45a2-9e4a-767e46720f1c.mp3 https://www.youtube.com/watch?v=YMEblRM4pGc
+13-07-25 19:28 [INFO]: Apagando bot...
+13-07-25 19:28 [INFO]: ✅ Bot conectado como Bot Cunny#4482
+13-07-25 19:28 [INFO]: 🎵 Bot de música optimizado listo para usar!
+13-07-25 19:28 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=HJuSIcSS_xI
+13-07-25 19:29 [INFO]: ✅ Canción añadida: adventurous pokemon music to make memories to
+13-07-25 19:29 [INFO]: Conectando al canal de voz...
+13-07-25 19:29 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:29 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_9e1b89d4-1126-4c63-a04e-66ac9ff3b219.mp3 https://www.youtube.com/watch?v=HJuSIcSS_xI
+13-07-25 19:30 [INFO]: Apagando bot...
+13-07-25 19:32 [INFO]: ✅ Bot conectado como Bot Cunny#4482
+13-07-25 19:32 [INFO]: 🎵 Bot de música optimizado listo para usar!
+13-07-25 19:32 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=HJuSIcSS_xI
+13-07-25 19:35 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=7s0nIxBLZio
+13-07-25 19:35 [INFO]: ✅ Canción añadida: Invincible title card
+13-07-25 19:35 [INFO]: Conectando al canal de voz...
+13-07-25 19:35 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:35 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_41f4540f-d67e-41ba-859c-e2fe7724afd6.mp3 https://www.youtube.com/watch?v=7s0nIxBLZio
+13-07-25 19:35 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:35 [INFO]: Reproduciendo: Invincible title card
+13-07-25 19:35 [INFO]: Canción finalizada: Invincible title card
+13-07-25 19:35 [INFO]: Archivo temporal eliminado: C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_41f4540f-d67e-41ba-859c-e2fe7724afd6.mp3
+13-07-25 19:36 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=tgzV6PWPZ6s
+13-07-25 19:36 [INFO]: ✅ Canción añadida: Radiohead - Karma Police - Invincible Season 2 Episode 1 Soundtrack
+13-07-25 19:36 [INFO]: Conectando al canal de voz...
+13-07-25 19:36 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:36 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_c932c9a8-bf13-4aa7-87b2-e96d90fc124f.mp3 https://www.youtube.com/watch?v=tgzV6PWPZ6s
+13-07-25 19:36 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:36 [INFO]: Reproduciendo: Radiohead - Karma Police - Invincible Season 2 Episode 1 Soundtrack
+13-07-25 19:39 [INFO]: Canción finalizada: Radiohead - Karma Police - Invincible Season 2 Episode 1 Soundtrack
+13-07-25 19:39 [INFO]: Archivo temporal eliminado: C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_c932c9a8-bf13-4aa7-87b2-e96d90fc124f.mp3
+13-07-25 19:39 [INFO]: Apagando bot...
+13-07-25 19:44 [INFO]: ✅ Bot conectado como Bot Cunny#4482
+13-07-25 19:44 [INFO]: 🎵 Bot de música optimizado listo para usar!
+13-07-25 19:44 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=HJuSIcSS_xI
+13-07-25 19:44 [INFO]: ✅ Canción añadida: adventurous pokemon music to make memories to (Streaming)
+13-07-25 19:44 [INFO]: Conectando al canal de voz...
+13-07-25 19:44 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:44 [INFO]: 🌐 Iniciando streaming para: adventurous pokemon music to make memories to
+13-07-25 19:44 [INFO]: ✅ URL de streaming obtenida: https://manifest.googlevideo.com/api/manifest/hls_...
+13-07-25 19:44 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:44 [INFO]: 🌐 Streaming: adventurous pokemon music to make memories to
+13-07-25 19:46 [INFO]: Conectando al canal de voz...
+13-07-25 19:46 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:46 [INFO]: 📥 Iniciando descarga para: ALL DOKKAN FEST AND LR DRAGON BALL SUPER: BROLY MOVIE OST MEGAMIX 
+13-07-25 19:46 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_6bb74331-2f1d-417e-95c2-942c169df164.mp3 https://www.youtube.com/watch?v=X-0Hlm7TW0w
+13-07-25 19:47 [INFO]: Apagando bot...
+13-07-25 19:50 [INFO]: ✅ Bot conectado como Bot Cunny#4482
+13-07-25 19:50 [INFO]: 🎵 Bot de música optimizado listo para usar!
+13-07-25 19:51 [INFO]: Conectando al canal de voz...
+13-07-25 19:51 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:51 [INFO]: 🔍 Obteniendo información de duración para: ALL DOKKAN FEST AND LR DRAGON BALL SUPER: BROLY MOVIE OST MEGAMIX 
+13-07-25 19:51 [INFO]: ✅ Duración obtenida: 22:17 - Usará streaming
+13-07-25 19:51 [INFO]: 🌐 Iniciando streaming para: ALL DOKKAN FEST AND LR DRAGON BALL SUPER: BROLY MOVIE OST MEGAMIX 
+13-07-25 19:51 [INFO]: ✅ URL de streaming obtenida: https://manifest.googlevideo.com/api/manifest/hls_...
+13-07-25 19:51 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:51 [INFO]: 🌐 Streaming: ALL DOKKAN FEST AND LR DRAGON BALL SUPER: BROLY MOVIE OST MEGAMIX 
+13-07-25 19:52 [INFO]: 🌐 Stream finalizado: ALL DOKKAN FEST AND LR DRAGON BALL SUPER: BROLY MOVIE OST MEGAMIX 
+13-07-25 19:52 [INFO]: 🔍 Obteniendo información de duración para: ALL DOKKAN FEST TANABATA OST MEGAMIX 2024 UPDATE 
+13-07-25 19:52 [INFO]: ✅ Duración obtenida: 30:03 - Usará streaming
+13-07-25 19:52 [INFO]: 🌐 Iniciando streaming para: ALL DOKKAN FEST TANABATA OST MEGAMIX 2024 UPDATE 
+13-07-25 19:52 [INFO]: ✅ URL de streaming obtenida: https://manifest.googlevideo.com/api/manifest/hls_...
+13-07-25 19:52 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:52 [INFO]: 🌐 Streaming: ALL DOKKAN FEST TANABATA OST MEGAMIX 2024 UPDATE 
+13-07-25 19:53 [INFO]: Apagando bot...
+13-07-25 19:58 [INFO]: ✅ Bot conectado como Bot Cunny#4482
+13-07-25 19:58 [INFO]: 🎵 Bot de música optimizado listo para usar!
+13-07-25 19:58 [INFO]: Conectando al canal de voz...
+13-07-25 19:58 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:58 [INFO]: 🔍 Obteniendo información de duración para: ALL DOKKAN FEST AND LR DRAGON BALL SUPER: BROLY MOVIE OST MEGAMIX 
+13-07-25 19:58 [INFO]: ✅ Duración obtenida: 22:17 - Usará streaming
+13-07-25 19:58 [INFO]: 🌐 Iniciando streaming para: ALL DOKKAN FEST AND LR DRAGON BALL SUPER: BROLY MOVIE OST MEGAMIX 
+13-07-25 19:58 [INFO]: ✅ URL de streaming obtenida: https://manifest.googlevideo.com/api/manifest/hls_...
+13-07-25 19:58 [INFO]: ✅ Conectado al canal de voz
+13-07-25 19:58 [INFO]: 🌐 Streaming: ALL DOKKAN FEST AND LR DRAGON BALL SUPER: BROLY MOVIE OST MEGAMIX 
+13-07-25 20:00 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=LUjqCjXe7IE
+13-07-25 20:00 [INFO]: ✅ Canción añadida: 3-Hour POKEMON with the MOST BEAUTIFUL SONGS | Relaxing & Chill Vibes 🌿 ✨ UP to 9G (Streaming)
+13-07-25 20:00 [INFO]: Conectando al canal de voz...
+13-07-25 20:00 [INFO]: ✅ Conectado al canal de voz
+13-07-25 20:00 [INFO]: 🌐 Iniciando streaming para: 3-Hour POKEMON with the MOST BEAUTIFUL SONGS | Relaxing & Chill Vibes 🌿 ✨ UP to 9G
+13-07-25 20:00 [INFO]: ✅ URL de streaming obtenida: https://manifest.googlevideo.com/api/manifest/hls_...
+13-07-25 20:00 [INFO]: ✅ Conectado al canal de voz
+13-07-25 20:00 [INFO]: 🌐 Streaming: 3-Hour POKEMON with the MOST BEAUTIFUL SONGS | Relaxing & Chill Vibes 🌿 ✨ UP to 9G
+13-07-25 20:01 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=9GLWDkFPRlc
+13-07-25 20:02 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=zE17PudRSL8
+13-07-25 20:02 [INFO]: ✅ Canción añadida: Happy Lucky Chappy (Descarga)
+13-07-25 20:02 [INFO]: Conectando al canal de voz...
+13-07-25 20:02 [INFO]: ✅ Conectado al canal de voz
+13-07-25 20:02 [INFO]: 📥 Iniciando descarga para: Happy Lucky Chappy
+13-07-25 20:02 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_464fbda2-6e12-4508-b7aa-b715f125cfe6.mp3 https://www.youtube.com/watch?v=zE17PudRSL8
+13-07-25 20:02 [INFO]: ✅ Conectado al canal de voz
+13-07-25 20:02 [INFO]: 📥 Reproduciendo: Happy Lucky Chappy
+13-07-25 20:05 [INFO]: 📥 Canción finalizada: Happy Lucky Chappy
+13-07-25 20:05 [INFO]: Archivo temporal eliminado: C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_464fbda2-6e12-4508-b7aa-b715f125cfe6.mp3
+13-07-25 20:08 [INFO]: Apagando bot...
