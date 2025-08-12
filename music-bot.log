@@ -575,3 +575,27 @@ Kemono Friends - Opening | Welcome to Japari Park"
 12-08-25 18:29 [INFO]: ✅ Bot conectado como Bot Cunny#4482
 12-08-25 18:29 [INFO]: 🎵 Bot de música optimizado listo para usar!
 12-08-25 18:29 [INFO]: Apagando bot...
+12-08-25 18:31 [INFO]: ✅ Bot conectado como Bot Cunny#4482
+12-08-25 18:31 [INFO]: 🎵 Bot de música optimizado listo para usar!
+12-08-25 18:31 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=9lNZ_Rnr7Jc
+12-08-25 18:31 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=9lNZ_Rnr7Jc
+12-08-25 18:31 [INFO]: ✅ Canción añadida: Bad Apple!! - Full Version w/video [Lyrics in Romaji, Translation in English] (Descarga)
+12-08-25 18:31 [INFO]: Conectando al canal de voz...
+12-08-25 18:31 [INFO]: ✅ Canción añadida: Bad Apple!! - Full Version w/video [Lyrics in Romaji, Translation in English] (Descarga)
+12-08-25 18:31 [INFO]: Conectando al canal de voz...
+12-08-25 18:31 [INFO]: ✅ Conectado al canal de voz
+12-08-25 18:31 [INFO]: 📥 Iniciando descarga para: Bad Apple!! - Full Version w/video [Lyrics in Romaji, Translation in English]
+12-08-25 18:31 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_2690b1a5-17fa-4721-9bbc-87c6239ef7b4.mp3 https://www.youtube.com/watch?v=9lNZ_Rnr7Jc
+12-08-25 18:31 [INFO]: ✅ Conectado al canal de voz
+12-08-25 18:31 [INFO]: 📥 Reproduciendo: Bad Apple!! - Full Version w/video [Lyrics in Romaji, Translation in English]
+12-08-25 18:33 [INFO]: 🤖 Obteniendo sugerencias de IA para: Bad Apple!! - Full Version w/video [Lyrics in Romaji, Translation in English]
+12-08-25 18:33 [INFO]: ✅ IA generó 4 sugerencias para: Bad Apple!! - Full Version w/video [Lyrics in Romaji, Translation in English]
+12-08-25 18:33 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=13EsiCjsssY
+12-08-25 18:33 [INFO]: ✅ Canción añadida: David Guetta - The World is Mine (Official Video) (Descarga)
+12-08-25 18:33 [INFO]: Canción añadida a la cola. Cola actual: 2 elementos
+12-08-25 18:37 [INFO]: 📥 Canción finalizada: Bad Apple!! - Full Version w/video [Lyrics in Romaji, Translation in English]
+12-08-25 18:37 [INFO]: Archivo temporal eliminado: C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_2690b1a5-17fa-4721-9bbc-87c6239ef7b4.mp3
+12-08-25 18:37 [INFO]: 📥 Iniciando descarga para: David Guetta - The World is Mine (Official Video)
+12-08-25 18:37 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_f8aa2e77-747a-4524-9536-5f08beead767.mp3 https://www.youtube.com/watch?v=13EsiCjsssY
+12-08-25 18:37 [INFO]: ✅ Conectado al canal de voz
+12-08-25 18:37 [INFO]: 📥 Reproduciendo: David Guetta - The World is Mine (Official Video)

@@ -338,75 +338,25 @@ async function playNextInQueue(voiceChannel) {
                 channelId: voiceChannel.id,
                 guildId: voiceChannel.guild.id,
                 adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-                selfDeaf: true // Añadir esta opción para mejorar estabilidad
             });
             
-            // Esperar a que la conexión esté lista con manejo mejorado de errores
+            // Esperar a que la conexión esté lista
             await new Promise((resolve, reject) => {
                 const timeout = setTimeout(() => {
                     reject(new Error('Timeout en conexión de voz'));
-                }, 15000); // Aumentar timeout a 15 segundos
-
-                // Manejar errores de conexión
-                const onError = (error) => {
-                    clearTimeout(timeout);
-                    logger.error(`Error de conexión de voz: ${error.message}`);
-                    reject(error);
-                };
-
-                connection.once('error', onError);
+                }, 10000);
 
                 connection.on('stateChange', (oldState, newState) => {
-                    logger.info(`Conexión cambió de ${oldState.status} a ${newState.status}`);
-                    
                     if (newState.status === 'ready') {
                         clearTimeout(timeout);
-                        connection.removeListener('error', onError);
                         logger.info('✅ Conectado al canal de voz');
                         resolve();
-                    } else if (newState.status === 'disconnected' || newState.status === 'destroyed') {
-                        clearTimeout(timeout);
-                        connection.removeListener('error', onError);
-                        reject(new Error(`Conexión falló: ${newState.status}`));
                     }
                 });
             });
         } catch (error) {
             logger.error(`Error de conexión: ${error.message}`);
-            // Reintentar una vez más
-            try {
-                logger.info('Reintentando conexión...');
-                if (connection) connection.destroy();
-                
-                await new Promise(resolve => setTimeout(resolve, 2000)); // Esperar 2 segundos
-                
-                connection = joinVoiceChannel({
-                    channelId: voiceChannel.id,
-                    guildId: voiceChannel.guild.id,
-                    adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-                    selfDeaf: true
-                });
-                
-                // Esperar con timeout más corto para el reintento
-                await new Promise((resolve, reject) => {
-                    const timeout = setTimeout(() => {
-                        reject(new Error('Timeout en reintento de conexión'));
-                    }, 10000);
-
-                    connection.on('stateChange', (oldState, newState) => {
-                        if (newState.status === 'ready') {
-                            clearTimeout(timeout);
-                            logger.info('✅ Reconectado al canal de voz exitosamente');
-                            resolve();
-                        }
-                    });
-                });
-            } catch (retryError) {
-                logger.error(`Fallo en reintento de conexión: ${retryError.message}`);
-                song.channel.send('❌ Error de conexión al canal de voz. Intenta nuevamente.');
-                isProcessing = false;
-                return;
-            }
+            return;
         }
     }
 
@@ -1026,7 +976,167 @@ process.on('SIGINT', () => {
     process.exit();
 });
 
-// Funciones auxiliares para limpiar y validar URLs
+// Funciones auxiliares
+
+// Función para reproducir mediante streaming directo
+async function playStreamDirectly(song, voiceChannel) {
+    try {
+        song.channel.send(`🌐 **Obteniendo stream**: ${song.title}`);
+        
+        const streamUrl = await getStreamUrl(song.url);
+        
+        song.channel.send(`🎵 **Iniciando streaming**: ${song.title}`);
+        
+        const resource = createAudioResource(streamUrl, {
+            inputType: StreamType.Arbitrary
+        });
+        
+        player = createAudioPlayer();
+        connection.subscribe(player);
+        player.play(resource);
+
+        player.on(AudioPlayerStatus.Playing, () => {
+            logger.info(`🌐 Streaming: ${song.title}`);
+            showMusicControls(song.channel);
+        });
+
+        player.on(AudioPlayerStatus.Idle, () => {
+            logger.info(`🌐 Stream finalizado: ${song.title}`);
+            queue.shift();
+            isProcessing = false;
+            playNextInQueue(voiceChannel);
+        });
+
+        player.on('error', error => {
+            logger.error(`❌ Error de streaming: ${error.message}`);
+            song.channel.send(`❌ Error en streaming. Intentando descarga como fallback...`);
+            // Fallback a descarga
+            song.shouldStream = false;
+            playWithDownload(song, voiceChannel);
+        });
+
+    } catch (error) {
+        logger.error(`❌ Error obteniendo stream: ${error.message}`);
+        song.channel.send(`❌ Error en streaming. Intentando descarga como fallback...`);
+        // Fallback a descarga
+        song.shouldStream = false;
+        await playWithDownload(song, voiceChannel);
+    }
+}
+
+// Función para reproducir mediante descarga (método original)
+async function playWithDownload(song, voiceChannel) {
+    // Archivo temporal único
+    const tempPath = path.join(__dirname, `temp_audio_${uuidv4()}.mp3`);
+    
+    song.channel.send(`📥 **Descargando**: ${song.title}`);
+
+    // Comando yt-dlp simplificado para videos normales
+    const ytdlpArgs = [
+        '-f', 'bestaudio/best',
+        '--no-warnings',
+        '--no-playlist',
+        '--retries', '3',
+        '--socket-timeout', '30',
+        '-o', tempPath,
+        song.url
+    ];
+
+    logger.info(`Ejecutando: yt-dlp ${ytdlpArgs.join(' ')}`);
+    const child = spawn('yt-dlp', ytdlpArgs, {
+        env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
+        stdio: ['pipe', 'pipe', 'pipe']
+    });
+
+    // Timeout más largo para descargas (5 minutos)
+    const timeoutId = setTimeout(() => {
+        logger.error('Timeout en descarga - proceso terminado');
+        child.kill('SIGKILL');
+        cleanupTempFile(tempPath);
+        song.channel.send('⏰ **Timeout en descarga** - La descarga tardó demasiado.');
+        queue.shift();
+        isProcessing = false;
+        playNextInQueue(voiceChannel);
+    }, 300000); // 5 minutos
+
+    // Manejo de errores del proceso
+    child.on('error', error => {
+        clearTimeout(timeoutId);
+        logger.error(`Error en yt-dlp: ${error.message}`);
+        song.channel.send('❌ Error al descargar el audio.');
+        cleanupTempFile(tempPath);
+        queue.shift();
+        isProcessing = false;
+        playNextInQueue(voiceChannel);
+    });
+
+    // Manejo de finalización del proceso
+    child.on('close', (code) => {
+        clearTimeout(timeoutId);
+        processes.delete(child);
+        
+        if (code !== 0) {
+            logger.error(`yt-dlp terminó con código ${code}`);
+            song.channel.send('❌ Error al descargar el audio. Saltando canción...');
+            cleanupTempFile(tempPath);
+            queue.shift();
+            isProcessing = false;
+            playNextInQueue(voiceChannel);
+            return;
+        }
+
+        // Reproducir archivo descargado
+        try {
+            if (!fs.existsSync(tempPath)) {
+                throw new Error('Archivo no encontrado');
+            }
+
+            const stats = fs.statSync(tempPath);
+            if (stats.size < 10000) {
+                throw new Error('Archivo muy pequeño');
+            }
+
+            const resource = createAudioResource(fs.createReadStream(tempPath), {
+                inputType: StreamType.Arbitrary
+            });
+            
+            player = createAudioPlayer();
+            connection.subscribe(player);
+            player.play(resource);
+
+            player.on(AudioPlayerStatus.Playing, () => {
+                logger.info(`📥 Reproduciendo: ${song.title}`);
+                showMusicControls(song.channel);
+            });
+
+            player.on(AudioPlayerStatus.Idle, () => {
+                logger.info(`📥 Canción finalizada: ${song.title}`);
+                cleanupTempFile(tempPath);
+                queue.shift();
+                isProcessing = false;
+                playNextInQueue(voiceChannel);
+            });
+
+            player.on('error', error => {
+                logger.error(`Error de reproducción: ${error.message}`);
+                cleanupTempFile(tempPath);
+                queue.shift();
+                isProcessing = false;
+                playNextInQueue(voiceChannel);
+            });
+
+        } catch (error) {
+            logger.error(`Error de reproducción: ${error.message}`);
+            song.channel.send('❌ Error al reproducir el audio.');
+            cleanupTempFile(tempPath);
+            queue.shift();
+            isProcessing = false;
+            playNextInQueue(voiceChannel);
+        }
+    });
+
+    processes.add(child);
+}
 
 function shuffleQueue(queue) {
     for (let i = queue.length - 1; i > 0; i--) {
@@ -1112,26 +1222,6 @@ client.on('error', error => {
 
 client.on('warn', warning => {
     logger.warn(`⚠️ Advertencia del cliente Discord: ${warning}`);
-});
-
-// Manejo de errores no capturados para evitar crashes
-process.on('unhandledRejection', (reason, promise) => {
-    logger.error(`❌ Unhandled Rejection at: ${promise}, reason: ${reason}`);
-    // No terminar el proceso, solo registrar el error
-});
-
-process.on('uncaughtException', (error) => {
-    logger.error(`❌ Uncaught Exception: ${error.message}`);
-    logger.error(error.stack);
-    // En este caso sí es crítico, pero intentar limpiar antes
-    if (connection) {
-        try {
-            connection.destroy();
-        } catch (e) {
-            // Ignorar errores de limpieza
-        }
-    }
-    process.exit(1);
 });
 
 // Iniciar el bot
