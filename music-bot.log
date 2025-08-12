@@ -560,3 +560,18 @@ Kemono Friends - Opening | Welcome to Japari Park"
 12-08-25 18:19 [INFO]: 🎵 Bot de música optimizado listo para usar!
 12-08-25 18:23 [INFO]: ✅ Bot conectado como Bot Cunny#4482
 12-08-25 18:23 [INFO]: 🎵 Bot de música optimizado listo para usar!
+12-08-25 18:25 [INFO]: ✅ Bot conectado como Bot Cunny#4482
+12-08-25 18:25 [INFO]: 🎵 Bot de música optimizado listo para usar!
+12-08-25 18:25 [INFO]: 🔍 Añadiendo canción: https://www.youtube.com/watch?v=Soy4jGPHr3g
+12-08-25 18:25 [INFO]: ✅ Canción añadida: テトリス / 重音テトSV (Descarga)
+12-08-25 18:25 [INFO]: Conectando al canal de voz...
+12-08-25 18:25 [INFO]: ✅ Conectado al canal de voz
+12-08-25 18:25 [INFO]: 📥 Iniciando descarga para: テトリス / 重音テトSV
+12-08-25 18:25 [INFO]: Ejecutando: yt-dlp -f bestaudio/best --no-warnings --no-playlist --retries 3 --socket-timeout 30 -o C:\Users\fiae\Documents\GitHub\Bot-local-musica-discord\temp_audio_7c1c1980-1c6d-4345-b418-265c221ab66c.mp3 https://www.youtube.com/watch?v=Soy4jGPHr3g
+12-08-25 18:25 [INFO]: ✅ Conectado al canal de voz
+12-08-25 18:25 [INFO]: 📥 Reproduciendo: テトリス / 重音テトSV
+12-08-25 18:25 [INFO]: 🤖 Obteniendo sugerencias de IA para: テトリス / 重音テトSV
+12-08-25 18:25 [ERROR]: ❌ Error obteniendo sugerencias de IA: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent: [404 Not Found] models/gemini-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+12-08-25 18:29 [INFO]: ✅ Bot conectado como Bot Cunny#4482
+12-08-25 18:29 [INFO]: 🎵 Bot de música optimizado listo para usar!
+12-08-25 18:29 [INFO]: Apagando bot...

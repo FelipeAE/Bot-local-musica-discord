@@ -67,6 +67,7 @@
 - Revisa tu conexión a internet
 - Verifica que la API key sea válida
 - Chequea si alcanzaste los límites diarios
+- **Error 404 del modelo**: El bot usa `gemini-1.5-flash` (modelo actualizado)
 
 ### 🔒 API Key no válida
 - Regenera la API key en Google AI Studio

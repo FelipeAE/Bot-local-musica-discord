@@ -28,7 +28,7 @@ let model = null;
 if (config.geminiApiKey && config.geminiApiKey !== 'TU_GEMINI_API_KEY_AQUI') {
     try {
         genAI = new GoogleGenerativeAI(config.geminiApiKey);
-        model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         console.log('✅ Google Gemini AI configurado correctamente');
     } catch (error) {
         console.log('⚠️ Error configurando Gemini AI:', error.message);
