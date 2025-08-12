@@ -6,7 +6,6 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { createLogger, format, transports } = require('winston');
 const moment = require('moment-timezone');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const config = require('./config.json');
 
 // Verificaciones de token
@@ -21,23 +20,6 @@ if (!config.token.startsWith('MT') && !config.token.startsWith('mT')) {
 }
 
 console.log('✅ Token configurado correctamente');
-
-// Configuración de Gemini AI
-let genAI = null;
-let model = null;
-if (config.geminiApiKey && config.geminiApiKey !== 'TU_GEMINI_API_KEY_AQUI') {
-    try {
-        genAI = new GoogleGenerativeAI(config.geminiApiKey);
-        model = genAI.getGenerativeModel({ model: "gemini-pro" });
-        console.log('✅ Google Gemini AI configurado correctamente');
-    } catch (error) {
-        console.log('⚠️ Error configurando Gemini AI:', error.message);
-        console.log('💡 Las sugerencias de IA estarán deshabilitadas');
-    }
-} else {
-    console.log('⚠️ API key de Gemini no configurada');
-    console.log('💡 Para habilitar sugerencias de IA, configura geminiApiKey en config.json');
-}
 
 // Timeout de conexión
 const connectionTimeout = setTimeout(() => {
@@ -118,119 +100,7 @@ async function getVideoInfo(url) {
     });
 }
 
-// Función para obtener sugerencias de IA
-async function getAISuggestions(songTitle) {
-    if (!model) {
-        return null;
-    }
-
-    try {
-        logger.info(`🤖 Obteniendo sugerencias de IA para: ${songTitle}`);
-        
-        const prompt = `Basándote en la canción "${songTitle}", sugiere 4 canciones similares en estilo, género o artista. 
-        
-        INSTRUCCIONES IMPORTANTES:
-        - Responde SOLO con los títulos de las canciones en formato "Artista - Título"
-        - Una canción por línea
-        - No incluyas números ni guiones al inicio
-        - No agregues explicaciones adicionales
-        - Asegúrate de que las canciones sean populares y estén disponibles en YouTube
-        
-        Ejemplo de formato correcto:
-        Queen - Somebody to Love
-        David Bowie - Heroes
-        The Beatles - Come Together
-        Led Zeppelin - Stairway to Heaven`;
-
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const suggestions = response.text().trim();
-        
-        // Procesar las sugerencias
-        const songLines = suggestions.split('\n')
-            .map(line => line.trim())
-            .filter(line => line.length > 0 && line.includes(' - '))
-            .slice(0, 4); // Máximo 4 sugerencias
-
-        logger.info(`✅ IA generó ${songLines.length} sugerencias para: ${songTitle}`);
-        return songLines;
-
-    } catch (error) {
-        logger.error(`❌ Error obteniendo sugerencias de IA: ${error.message}`);
-        return null;
-    }
-}
-
-// Función para mostrar sugerencias de IA
-async function showAISuggestions(channel, songTitle) {
-    if (!model) {
-        return channel.send('⚠️ Las sugerencias de IA no están habilitadas. Configura la API key de Gemini en config.json');
-    }
-
-    const suggestionMsg = await channel.send('🤖 **Generando sugerencias similares...**');
-    
-    const suggestions = await getAISuggestions(songTitle);
-    
-    if (!suggestions || suggestions.length === 0) {
-        return suggestionMsg.edit('❌ No se pudieron generar sugerencias en este momento.');
-    }
-
-    // Crear botones para cada sugerencia
-    const buttons = suggestions.map((song, index) => 
-        new ButtonBuilder()
-            .setCustomId(`suggest_${index}`)
-            .setLabel(`${index + 1}. ${song.length > 80 ? song.substring(0, 77) + '...' : song}`)
-            .setStyle(ButtonStyle.Secondary)
-    );
-
-    // Dividir en rows (máximo 5 botones por row)
-    const rows = [];
-    for (let i = 0; i < buttons.length; i += 5) {
-        const row = new ActionRowBuilder().addComponents(buttons.slice(i, i + 5));
-        rows.push(row);
-    }
-
-    // Agregar botón para cancelar
-    const cancelRow = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-            .setCustomId('suggest_cancel')
-            .setLabel('❌ Cancelar')
-            .setStyle(ButtonStyle.Danger)
-    );
-    rows.push(cancelRow);
-
-    const suggestEmbed = {
-        color: 0xFF6B35,
-        title: '🤖 Sugerencias de IA',
-        description: `**Basado en:** ${songTitle}\n\n**Canciones similares sugeridas:**\n${suggestions.map((song, i) => `${i + 1}. ${song}`).join('\n')}`,
-        footer: { text: 'Haz clic en una sugerencia para añadirla a la cola' }
-    };
-
-    // Guardar sugerencias temporalmente para uso posterior
-    if (!suggestionMsg.suggestions) {
-        suggestionMsg.suggestions = suggestions;
-    }
-
-    await suggestionMsg.edit({
-        content: '',
-        embeds: [suggestEmbed],
-        components: rows
-    });
-
-    // Auto-eliminar después de 60 segundos
-    setTimeout(async () => {
-        try {
-            await suggestionMsg.edit({ 
-                embeds: [{ ...suggestEmbed, description: suggestEmbed.description + '\n\n⏰ *Sugerencias expiradas*' }], 
-                components: [] 
-            });
-        } catch (error) {
-            // Ignorar errores si el mensaje ya fue eliminado
-        }
-    }, 60000);
-
-    return suggestionMsg;
-}
+// Función para parsear duración a segundos
 function parseDurationToSeconds(duration) {
     if (!duration || duration === 'N/A') return 0;
     
@@ -604,12 +474,7 @@ async function showMusicControls(channel) {
         new ButtonBuilder()
             .setCustomId('show_queue')
             .setLabel('📋 Cola')
-            .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-            .setCustomId('ai_suggest')
-            .setLabel('🤖 Sugerir Similar')
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(!model) // Deshabilitar si no hay IA configurada
+            .setStyle(ButtonStyle.Primary)
     );
 
     try {
@@ -696,15 +561,6 @@ client.on('interactionCreate', async interaction => {
                 }
                 break;
 
-            case 'ai_suggest':
-                if (!currentSong) {
-                    return interaction.reply({ content: 'No hay música reproduciéndose para generar sugerencias.', ephemeral: true });
-                }
-                await interaction.deferReply({ ephemeral: true });
-                await showAISuggestions(interaction.channel, currentSong.title);
-                await interaction.editReply('🤖 ¡Sugerencias generadas! Revisa el canal para ver las opciones.');
-                break;
-
             case 'show_queue':
                 if (queue.length === 0) {
                     return interaction.reply({ content: 'La cola está vacía.', ephemeral: true });
@@ -725,91 +581,9 @@ client.on('interactionCreate', async interaction => {
 
                 await interaction.reply({ embeds: [queueEmbed], ephemeral: true });
                 break;
-
-            // Manejo de sugerencias de IA
-            case 'suggest_cancel':
-                await interaction.update({ 
-                    embeds: [{ 
-                        color: 0x888888, 
-                        title: '🤖 Sugerencias Canceladas', 
-                        description: 'Sugerencias de IA canceladas por el usuario.' 
-                    }], 
-                    components: [] 
-                });
-                break;
-
-            default:
-                // Manejo de botones de sugerencias individuales
-                if (interaction.customId.startsWith('suggest_')) {
-                    const index = parseInt(interaction.customId.split('_')[1]);
-                    const message = interaction.message;
-                    
-                    // Buscar las sugerencias en el embed
-                    if (message.embeds && message.embeds[0] && message.embeds[0].description) {
-                        const description = message.embeds[0].description;
-                        const lines = description.split('\n');
-                        let suggestion = null;
-                        
-                        for (const line of lines) {
-                            if (line.startsWith(`${index + 1}.`)) {
-                                suggestion = line.substring(3).trim(); // Remover "1. "
-                                break;
-                            }
-                        }
-                        
-                        if (suggestion) {
-                            await interaction.deferReply({ ephemeral: true });
-                            
-                            // Buscar en YouTube la sugerencia
-                            const searchMessage = `🔍 Buscando sugerencia: **${suggestion}**`;
-                            await interaction.editReply(searchMessage);
-                            
-                            exec(`yt-dlp "ytsearch1:${suggestion}" --print "%(id)s" --print "%(title)s" --no-warnings`, { 
-                                timeout: 10000,
-                                encoding: 'utf8',
-                                env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
-                            }, async (error, stdout, stderr) => {
-                                if (error) {
-                                    return interaction.editReply('❌ Error buscando la sugerencia.');
-                                }
-
-                                const lines = stdout.trim().split('\n');
-                                if (lines.length >= 2) {
-                                    const videoId = lines[0];
-                                    const title = normalizeUTF8(lines[1]);
-                                    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-                                    
-                                    try {
-                                        await addSongToQueue(videoUrl, interaction.member, interaction.channel, voiceChannel);
-                                        await interaction.editReply(`✅ **${suggestion}** añadida a la cola`);
-                                        
-                                        // Actualizar el mensaje de sugerencias para marcar como añadida
-                                        const updatedEmbed = { ...message.embeds[0] };
-                                        updatedEmbed.description = updatedEmbed.description.replace(
-                                            `${index + 1}. ${suggestion}`,
-                                            `${index + 1}. ~~${suggestion}~~ ✅`
-                                        );
-                                        await message.edit({ embeds: [updatedEmbed], components: message.components });
-                                        
-                                    } catch (addError) {
-                                        await interaction.editReply('❌ Error añadiendo la canción a la cola.');
-                                    }
-                                } else {
-                                    await interaction.editReply('❌ No se encontró la canción sugerida.');
-                                }
-                            });
-                        } else {
-                            await interaction.reply({ content: 'Error: No se pudo encontrar la sugerencia seleccionada.', ephemeral: true });
-                        }
-                    }
-                }
-                break;
         }
     } catch (error) {
         logger.error(`Error en interacción: ${error.message}`);
-        if (!interaction.replied && !interaction.deferred) {
-            await interaction.reply({ content: 'Ocurrió un error procesando tu solicitud.', ephemeral: true });
-        }
     }
 });
 
@@ -945,15 +719,6 @@ client.on('messageCreate', async message => {
             
             message.channel.send({ embeds: [queueEmbed] });
         }
-    } else if (command === 'suggest') {
-        const songQuery = args.join(' ');
-        
-        if (!songQuery && !currentSong) {
-            return message.channel.send('❌ Proporciona el nombre de una canción o reproduce algo para obtener sugerencias.\nEjemplo: `!suggest Bohemian Rhapsody`');
-        }
-        
-        const songTitle = songQuery || currentSong.title;
-        await showAISuggestions(message.channel, songTitle);
     }
 });
 
@@ -962,9 +727,7 @@ client.on('ready', () => {
     clearTimeout(connectionTimeout);
     logger.info(`✅ Bot conectado como ${client.user.tag}`);
     logger.info('🎵 Bot de música optimizado listo para usar!');
-    
-    const aiStatus = model ? ' con IA 🤖' : '';
-    client.user.setActivity(`🎵 Música${aiStatus} | !play para empezar`, { type: 'LISTENING' });
+    client.user.setActivity('🎵 Música | Usa !play para comandos', { type: 'LISTENING' });
 });
 
 // Manejo de cierre limpio
