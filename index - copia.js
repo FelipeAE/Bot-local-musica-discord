@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, StreamType } = require('@discordjs/voice');
 const { exec, spawn } = require('child_process');
 const fs = require('fs');
@@ -6,7 +6,6 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { createLogger, format, transports } = require('winston');
 const moment = require('moment-timezone');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const config = require('./config.json');
 
 // Verificaciones de token
@@ -21,23 +20,6 @@ if (!config.token.startsWith('MT') && !config.token.startsWith('mT')) {
 }
 
 console.log('✅ Token configurado correctamente');
-
-// Configuración de Gemini AI
-let genAI = null;
-let model = null;
-if (config.geminiApiKey && config.geminiApiKey !== 'TU_GEMINI_API_KEY_AQUI') {
-    try {
-        genAI = new GoogleGenerativeAI(config.geminiApiKey);
-        model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-        console.log('✅ Google Gemini AI configurado correctamente');
-    } catch (error) {
-        console.log('⚠️ Error configurando Gemini AI:', error.message);
-        console.log('💡 Las sugerencias de IA estarán deshabilitadas');
-    }
-} else {
-    console.log('⚠️ API key de Gemini no configurada');
-    console.log('💡 Para habilitar sugerencias de IA, configura geminiApiKey en config.json');
-}
 
 // Timeout de conexión
 const connectionTimeout = setTimeout(() => {
@@ -69,10 +51,7 @@ let connection;
 let isProcessing = false;
 let currentSong = null;
 let controlMessage = null;
-let isRepeatMode = false; // Modo repetir playlist
-let originalPlaylist = []; // Guardar playlist original para repeat
 const processes = new Set();
-const addingSongs = new Set(); // Protección contra duplicación
 
 // Cliente Discord
 const client = new Client({
@@ -121,144 +100,7 @@ async function getVideoInfo(url) {
     });
 }
 
-// Función para obtener sugerencias de IA
-async function getAISuggestions(songTitle) {
-    if (!model) {
-        return null;
-    }
-
-    try {
-        logger.info(`🤖 Obteniendo sugerencias de IA para: ${songTitle}`);
-        
-        const prompt = `Analiza la canción "${songTitle}" y sugiere exactamente 10 canciones similares siguiendo estos criterios de prioridad:
-
-        CRITERIOS DE SUGERENCIA (en orden de importancia):
-        1. 🎤 MISMO ARTISTA: 3-4 canciones del mismo artista/grupo si es posible
-        2. 🎵 MISMO GÉNERO: 3-4 canciones del mismo género musical 
-        3. 🎶 MISMA ÉPOCA: 2-3 canciones de la misma década/era musical
-        4. 🔥 POPULARIDAD: Todas deben ser canciones reconocidas y disponibles en YouTube
-        
-        FORMATO REQUERIDO:
-        - Responde SOLO con los títulos en formato "Artista - Título de la canción"
-        - Una canción por línea (exactamente 10 líneas)
-        - No incluyas números, guiones o símbolos al inicio
-        - No agregues explicaciones, comentarios o texto adicional
-        - Asegúrate de que sean canciones reales y populares
-        
-        EJEMPLOS DE ANÁLISIS:
-        - Si es anime/J-pop: sugiere más anime songs y J-pop
-        - Si es rock clásico: sugiere más rock de esa época
-        - Si es reggaeton: sugiere más reggaeton y artistas similares
-        - Si es pop: sugiere pop mainstream y artistas relacionados
-        
-        Ejemplo de formato correcto:
-        LiSA - Gurenge
-        Aimer - Brave Shine
-        YOASOBI - Yoru ni Kakeru
-        Kenshi Yonezu - Lemon`;
-
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const suggestions = response.text().trim();
-        
-        // Procesar las sugerencias
-        const songLines = suggestions.split('\n')
-            .map(line => line.trim())
-            .filter(line => line.length > 0 && line.includes(' - '))
-            .slice(0, 10); // Máximo 10 sugerencias
-
-        logger.info(`✅ IA generó ${songLines.length} sugerencias para: ${songTitle}`);
-        return songLines;
-
-    } catch (error) {
-        if (error.message.includes('overloaded') || error.message.includes('503')) {
-            logger.warn(`⚠️ Modelo de IA sobrecargado: ${error.message}`);
-            return 'OVERLOADED';
-        } else {
-            logger.error(`❌ Error obteniendo sugerencias de IA: ${error.message}`);
-            return null;
-        }
-    }
-}
-
-// Función para mostrar sugerencias de IA
-async function showAISuggestions(channel, songTitle) {
-    if (!model) {
-        return channel.send('⚠️ Las sugerencias de IA no están habilitadas. Configura la API key de Gemini en config.json');
-    }
-
-    const suggestionMsg = await channel.send('🤖 **Generando sugerencias similares...**');
-    
-    const suggestions = await getAISuggestions(songTitle);
-    
-    if (suggestions === 'OVERLOADED') {
-        return suggestionMsg.edit({
-            embeds: [{
-                color: 0xFFAA00,
-                title: '⚠️ Servicio temporalmente no disponible',
-                description: '🤖 El modelo de IA está sobrecargado en este momento.\n\n⏰ **Por favor, intenta de nuevo en unos minutos**\n\nPuedes seguir usando el bot para reproducir música normalmente.',
-                footer: { text: 'Error 503 - Servicio temporalmente no disponible' }
-            }]
-        });
-    }
-    
-    if (!suggestions || suggestions.length === 0) {
-        return suggestionMsg.edit({
-            embeds: [{
-                color: 0xFF0000,
-                title: '❌ Error generando sugerencias',
-                description: 'No se pudieron generar sugerencias en este momento.\n\nPuedes intentar de nuevo más tarde o usar `!play [canción]` para añadir música manualmente.',
-                footer: { text: 'Servicio de IA temporalmente no disponible' }
-            }]
-        });
-    }
-
-    // Crear menú desplegable de sugerencias
-    const selectMenu = new StringSelectMenuBuilder()
-        .setCustomId('ai_suggestions')
-        .setPlaceholder('🤖 10 sugerencias inteligentes - Haz clic para seleccionar')
-        .addOptions(
-            suggestions.map((song, index) => 
-                new StringSelectMenuOptionBuilder()
-                    .setLabel(song.length > 100 ? song.substring(0, 97) + '...' : song)
-                    .setDescription('🎵 Standard Quality • 128kbps ⭐ 5.0 ⬆️ Trending')
-                    .setValue(`suggestion_${index}`)
-                    .setEmoji('🎵')
-            )
-        );
-
-    const row = new ActionRowBuilder().addComponents(selectMenu);
-
-    const suggestEmbed = {
-        color: 0x1DB954, // Verde Spotify
-        title: `🎵 Now Playing - ${songTitle}`,
-        description: `🎵 Standard Quality • 128kbps\n⭐ 5.0 ⬆️ Trending\nRequested by user`,
-        footer: { text: '🤖 10 sugerencias inteligentes - Selecciona del menú desplegable para añadir a la cola' }
-    };
-
-    // Guardar sugerencias en el mensaje para uso posterior
-    suggestionMsg.suggestions = suggestions;
-
-    await suggestionMsg.edit({
-        content: '',
-        embeds: [suggestEmbed],
-        components: [row]
-    });
-
-    // Auto-eliminar después de 60 segundos
-    setTimeout(async () => {
-        try {
-            await suggestionMsg.edit({ 
-                embeds: [{ ...suggestEmbed, description: suggestEmbed.description + '\n\n⏰ *Sugerencias expiradas*' }], 
-                components: [] 
-            });
-        } catch (error) {
-            // Ignorar errores si el mensaje ya fue eliminado
-        }
-    }, 60000);
-
-    return suggestionMsg;
-}
+// Función para parsear duración a segundos
 function parseDurationToSeconds(duration) {
     if (!duration || duration === 'N/A') return 0;
     
@@ -300,21 +142,12 @@ async function getStreamUrl(url) {
 
 // Añadir canción a la cola (simplificado)
 async function addSongToQueue(url, member, channel, voiceChannel) {
-    // Protección contra duplicación - verificar si ya se está procesando esta URL
-    if (addingSongs.has(url)) {
-        logger.warn(`⚠️ La canción ${url} ya se está procesando, ignorando duplicado`);
-        return;
-    }
-    
-    addingSongs.add(url); // Marcar como en proceso
-    
     try {
         logger.info(`🔍 Añadiendo canción: ${url}`);
         
         // Verificar duplicados
         const isDuplicate = queue.some(song => song.url === url) || (currentSong && currentSong.url === url);
         if (isDuplicate) {
-            addingSongs.delete(url); // Limpiar semáforo
             return channel.send('❌ Esta canción ya está en la cola o reproduciéndose.');
         }
         
@@ -322,26 +155,18 @@ async function addSongToQueue(url, member, channel, voiceChannel) {
         
         // Rechazar videos muy largos (más de 4 horas)
         if (videoInfo.isLong) {
-            addingSongs.delete(url); // Limpiar semáforo
             return channel.send('❌ Este video es demasiado largo (más de 4 horas). Solo se permiten videos de hasta 4 horas.');
         }
         
         // Añadir a la cola
-        const songData = { 
+        queue.push({ 
             url, 
             title: videoInfo.title, 
             duration: videoInfo.duration,
             shouldStream: videoInfo.shouldStream, // Nuevo flag para streaming
             member, 
             channel 
-        };
-        
-        queue.push(songData);
-        
-        // También añadir a la playlist original para repeat
-        if (!originalPlaylist.some(song => song.url === url)) {
-            originalPlaylist.push({...songData});
-        }
+        });
         
         logger.info(`✅ Canción añadida: ${videoInfo.title} ${videoInfo.shouldStream ? '(Streaming)' : '(Descarga)'}`);
         
@@ -362,12 +187,9 @@ async function addSongToQueue(url, member, channel, voiceChannel) {
         } else {
             logger.info(`Canción añadida a la cola. Cola actual: ${queue.length} elementos`);
         }
-        
-        addingSongs.delete(url); // Limpiar semáforo
     } catch (error) {
         logger.error('❌ Error al obtener información del video:', error);
         channel.send('❌ Error al procesar el video.');
-        addingSongs.delete(url); // Limpiar semáforo en caso de error
     }
 }
 
@@ -409,27 +231,18 @@ async function playNextInQueue(voiceChannel) {
     }
 
     if (queue.length === 0) {
-        // Si está en modo repeat y hay una playlist original, repetirla
-        if (isRepeatMode && originalPlaylist.length > 0) {
-            logger.info('🔁 Modo repeat activado: reiniciando playlist...');
-            queue = [...originalPlaylist]; // Copiar la playlist original
-            // Continuar con la primera canción de la playlist repetida
-            // No hacer return aquí, continuar con la lógica normal de reproducción
-        } else {
-            // Cola vacía y sin repeat - desconectar
-            if (connection) {
-                connection.destroy();
-                connection = null;
-            }
-            currentSong = null;
-            isProcessing = false;
-            originalPlaylist = []; // Limpiar playlist original
-            if (controlMessage) {
-                await controlMessage.edit({ components: [] });
-                controlMessage = null;
-            }
-            return;
+        // Cola vacía - desconectar
+        if (connection) {
+            connection.destroy();
+            connection = null;
         }
+        currentSong = null;
+        isProcessing = false;
+        if (controlMessage) {
+            await controlMessage.edit({ components: [] });
+            controlMessage = null;
+        }
+        return;
     }
 
     isProcessing = true;
@@ -661,16 +474,7 @@ async function showMusicControls(channel) {
         new ButtonBuilder()
             .setCustomId('show_queue')
             .setLabel('📋 Cola')
-            .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-            .setCustomId('repeat_toggle')
-            .setLabel(isRepeatMode ? '🔁 Repetir: ON' : '🔁 Repetir: OFF')
-            .setStyle(isRepeatMode ? ButtonStyle.Success : ButtonStyle.Secondary),
-        new ButtonBuilder()
-            .setCustomId('ai_suggest')
-            .setLabel('🤖 Sugerir Similar')
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(!model) // Deshabilitar si no hay IA configurada
+            .setStyle(ButtonStyle.Primary)
     );
 
     try {
@@ -689,63 +493,12 @@ async function showMusicControls(channel) {
 
 // Manejo de interacciones de botones
 client.on('interactionCreate', async interaction => {
-    if (!interaction.isButton() && !interaction.isStringSelectMenu()) return;
+    if (!interaction.isButton()) return;
 
     const voiceChannel = interaction.member.voice.channel;
     if (!voiceChannel) return interaction.reply({ content: 'Entra a un canal de voz primero.', ephemeral: true });
 
     try {
-        // Manejo de menú desplegable de sugerencias de IA
-        if (interaction.isStringSelectMenu() && interaction.customId === 'ai_suggestions') {
-            const selectedIndex = parseInt(interaction.values[0].split('_')[1]);
-            const message = interaction.message;
-            
-            if (message.suggestions && message.suggestions[selectedIndex]) {
-                const suggestion = message.suggestions[selectedIndex];
-                
-                await interaction.deferReply({ ephemeral: true });
-                
-                // Buscar en YouTube la sugerencia
-                const searchMessage = `🔍 Buscando sugerencia: **${suggestion}**`;
-                await interaction.editReply(searchMessage);
-                
-                exec(`yt-dlp "ytsearch1:${suggestion}" --print "%(id)s" --print "%(title)s" --no-warnings`, { 
-                    timeout: 10000,
-                    encoding: 'utf8',
-                    env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
-                }, async (error, stdout, stderr) => {
-                    if (error) {
-                        return interaction.editReply('❌ Error buscando la sugerencia.');
-                    }
-
-                    const lines = stdout.trim().split('\n');
-                    if (lines.length >= 2) {
-                        const videoId = lines[0];
-                        const title = normalizeUTF8(lines[1]);
-                        const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-                        
-                        try {
-                            await addSongToQueue(videoUrl, interaction.member, interaction.channel, voiceChannel);
-                            await interaction.editReply(`✅ **${suggestion}** añadida a la cola`);
-                            
-                            // Actualizar el menú para marcar como añadida
-                            const updatedEmbed = { ...message.embeds[0] };
-                            updatedEmbed.description = updatedEmbed.description + `\n\n✅ **${suggestion}** añadida a la cola`;
-                            await message.edit({ embeds: [updatedEmbed], components: message.components });
-                            
-                        } catch (addError) {
-                            await interaction.editReply('❌ Error añadiendo la canción a la cola.');
-                        }
-                    } else {
-                        await interaction.editReply('❌ No se encontró la canción sugerida.');
-                    }
-                });
-            } else {
-                await interaction.reply({ content: 'Error: No se pudo encontrar la sugerencia seleccionada.', ephemeral: true });
-            }
-            return;
-        }
-
         switch (interaction.customId) {
             case 'skip':
                 if (queue.length > 1) {
@@ -781,15 +534,10 @@ client.on('interactionCreate', async interaction => {
             case 'stop':
                 if (player) player.stop();
                 queue = [];
-                originalPlaylist = []; // Limpiar playlist original
-                isRepeatMode = false; // Desactivar repeat al detener
                 currentSong = null;
                 isProcessing = false; // Resetear el estado de procesamiento
                 processes.forEach(child => child.kill());
                 processes.clear();
-                
-                // Limpiar archivos temporales al detener
-                cleanupAllTempFiles();
                 
                 if (connection) {
                     connection.destroy();
@@ -801,7 +549,7 @@ client.on('interactionCreate', async interaction => {
                     controlMessage = null;
                 }
                 
-                await interaction.reply('⏹ Música detenida, cola limpiada, repeat desactivado y archivos temporales eliminados');
+                await interaction.reply('⏹ Música detenida y cola limpiada');
                 break;
 
             case 'nowplaying':
@@ -811,24 +559,6 @@ client.on('interactionCreate', async interaction => {
                 } else {
                     await interaction.reply('No hay música en reproducción.');
                 }
-                break;
-
-            case 'repeat_toggle':
-                isRepeatMode = !isRepeatMode;
-                await interaction.reply(`🔁 Modo repetir: ${isRepeatMode ? '**ACTIVADO**' : '**DESACTIVADO**'}`);
-                // Actualizar los controles para reflejar el cambio
-                if (controlMessage && controlMessage.channel) {
-                    showMusicControls(controlMessage.channel).catch(console.error);
-                }
-                break;
-
-            case 'ai_suggest':
-                if (!currentSong) {
-                    return interaction.reply({ content: 'No hay música reproduciéndose para generar sugerencias.', ephemeral: true });
-                }
-                await interaction.deferReply({ ephemeral: true });
-                await showAISuggestions(interaction.channel, currentSong.title);
-                await interaction.editReply('🤖 ¡Sugerencias generadas! Revisa el canal para ver las opciones.');
                 break;
 
             case 'show_queue':
@@ -851,17 +581,9 @@ client.on('interactionCreate', async interaction => {
 
                 await interaction.reply({ embeds: [queueEmbed], ephemeral: true });
                 break;
-
-            default:
-                // Manejo de IDs de interacción no reconocidos
-                await interaction.reply({ content: 'Interacción no reconocida.', ephemeral: true });
-                break;
         }
     } catch (error) {
         logger.error(`Error en interacción: ${error.message}`);
-        if (!interaction.replied && !interaction.deferred) {
-            await interaction.reply({ content: 'Ocurrió un error procesando tu solicitud.', ephemeral: true });
-        }
     }
 });
 
@@ -918,21 +640,13 @@ client.on('messageCreate', async message => {
                                 
                                 // Para playlists, añadir sin información de duración (se detectará después)
                                 // Esto permite que el sistema híbrido funcione cuando se procese cada canción
-                                const songData = { 
+                                queue.push({ 
                                     url: videoUrl, 
                                     title: title,
                                     shouldStream: false, // Se determinará cuando se procese
                                     member: message.member, 
                                     channel: message.channel 
-                                };
-                                
-                                queue.push(songData);
-                                
-                                // También añadir a la playlist original para repeat
-                                if (!originalPlaylist.some(song => song.url === videoUrl)) {
-                                    originalPlaylist.push({...songData});
-                                }
-                                
+                                });
                                 songsAdded++;
                             }
                         }
@@ -1005,15 +719,6 @@ client.on('messageCreate', async message => {
             
             message.channel.send({ embeds: [queueEmbed] });
         }
-    } else if (command === 'suggest') {
-        const songQuery = args.join(' ');
-        
-        if (!songQuery && !currentSong) {
-            return message.channel.send('❌ Proporciona el nombre de una canción o reproduce algo para obtener sugerencias.\nEjemplo: `!suggest Bohemian Rhapsody`');
-        }
-        
-        const songTitle = songQuery || currentSong.title;
-        await showAISuggestions(message.channel, songTitle);
     }
 });
 
@@ -1022,12 +727,7 @@ client.on('ready', () => {
     clearTimeout(connectionTimeout);
     logger.info(`✅ Bot conectado como ${client.user.tag}`);
     logger.info('🎵 Bot de música optimizado listo para usar!');
-    
-    // Limpiar archivos temporales al iniciar
-    cleanupAllTempFiles();
-    
-    const aiStatus = model ? ' con IA 🤖' : '';
-    client.user.setActivity(`🎵 Música${aiStatus} | !play para empezar`, { type: 'LISTENING' });
+    client.user.setActivity('🎵 Música | Usa !play para comandos', { type: 'LISTENING' });
 });
 
 // Manejo de cierre limpio
@@ -1039,7 +739,167 @@ process.on('SIGINT', () => {
     process.exit();
 });
 
-// Funciones auxiliares para limpiar y validar URLs
+// Funciones auxiliares
+
+// Función para reproducir mediante streaming directo
+async function playStreamDirectly(song, voiceChannel) {
+    try {
+        song.channel.send(`🌐 **Obteniendo stream**: ${song.title}`);
+        
+        const streamUrl = await getStreamUrl(song.url);
+        
+        song.channel.send(`🎵 **Iniciando streaming**: ${song.title}`);
+        
+        const resource = createAudioResource(streamUrl, {
+            inputType: StreamType.Arbitrary
+        });
+        
+        player = createAudioPlayer();
+        connection.subscribe(player);
+        player.play(resource);
+
+        player.on(AudioPlayerStatus.Playing, () => {
+            logger.info(`🌐 Streaming: ${song.title}`);
+            showMusicControls(song.channel);
+        });
+
+        player.on(AudioPlayerStatus.Idle, () => {
+            logger.info(`🌐 Stream finalizado: ${song.title}`);
+            queue.shift();
+            isProcessing = false;
+            playNextInQueue(voiceChannel);
+        });
+
+        player.on('error', error => {
+            logger.error(`❌ Error de streaming: ${error.message}`);
+            song.channel.send(`❌ Error en streaming. Intentando descarga como fallback...`);
+            // Fallback a descarga
+            song.shouldStream = false;
+            playWithDownload(song, voiceChannel);
+        });
+
+    } catch (error) {
+        logger.error(`❌ Error obteniendo stream: ${error.message}`);
+        song.channel.send(`❌ Error en streaming. Intentando descarga como fallback...`);
+        // Fallback a descarga
+        song.shouldStream = false;
+        await playWithDownload(song, voiceChannel);
+    }
+}
+
+// Función para reproducir mediante descarga (método original)
+async function playWithDownload(song, voiceChannel) {
+    // Archivo temporal único
+    const tempPath = path.join(__dirname, `temp_audio_${uuidv4()}.mp3`);
+    
+    song.channel.send(`📥 **Descargando**: ${song.title}`);
+
+    // Comando yt-dlp simplificado para videos normales
+    const ytdlpArgs = [
+        '-f', 'bestaudio/best',
+        '--no-warnings',
+        '--no-playlist',
+        '--retries', '3',
+        '--socket-timeout', '30',
+        '-o', tempPath,
+        song.url
+    ];
+
+    logger.info(`Ejecutando: yt-dlp ${ytdlpArgs.join(' ')}`);
+    const child = spawn('yt-dlp', ytdlpArgs, {
+        env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
+        stdio: ['pipe', 'pipe', 'pipe']
+    });
+
+    // Timeout más largo para descargas (5 minutos)
+    const timeoutId = setTimeout(() => {
+        logger.error('Timeout en descarga - proceso terminado');
+        child.kill('SIGKILL');
+        cleanupTempFile(tempPath);
+        song.channel.send('⏰ **Timeout en descarga** - La descarga tardó demasiado.');
+        queue.shift();
+        isProcessing = false;
+        playNextInQueue(voiceChannel);
+    }, 300000); // 5 minutos
+
+    // Manejo de errores del proceso
+    child.on('error', error => {
+        clearTimeout(timeoutId);
+        logger.error(`Error en yt-dlp: ${error.message}`);
+        song.channel.send('❌ Error al descargar el audio.');
+        cleanupTempFile(tempPath);
+        queue.shift();
+        isProcessing = false;
+        playNextInQueue(voiceChannel);
+    });
+
+    // Manejo de finalización del proceso
+    child.on('close', (code) => {
+        clearTimeout(timeoutId);
+        processes.delete(child);
+        
+        if (code !== 0) {
+            logger.error(`yt-dlp terminó con código ${code}`);
+            song.channel.send('❌ Error al descargar el audio. Saltando canción...');
+            cleanupTempFile(tempPath);
+            queue.shift();
+            isProcessing = false;
+            playNextInQueue(voiceChannel);
+            return;
+        }
+
+        // Reproducir archivo descargado
+        try {
+            if (!fs.existsSync(tempPath)) {
+                throw new Error('Archivo no encontrado');
+            }
+
+            const stats = fs.statSync(tempPath);
+            if (stats.size < 10000) {
+                throw new Error('Archivo muy pequeño');
+            }
+
+            const resource = createAudioResource(fs.createReadStream(tempPath), {
+                inputType: StreamType.Arbitrary
+            });
+            
+            player = createAudioPlayer();
+            connection.subscribe(player);
+            player.play(resource);
+
+            player.on(AudioPlayerStatus.Playing, () => {
+                logger.info(`📥 Reproduciendo: ${song.title}`);
+                showMusicControls(song.channel);
+            });
+
+            player.on(AudioPlayerStatus.Idle, () => {
+                logger.info(`📥 Canción finalizada: ${song.title}`);
+                cleanupTempFile(tempPath);
+                queue.shift();
+                isProcessing = false;
+                playNextInQueue(voiceChannel);
+            });
+
+            player.on('error', error => {
+                logger.error(`Error de reproducción: ${error.message}`);
+                cleanupTempFile(tempPath);
+                queue.shift();
+                isProcessing = false;
+                playNextInQueue(voiceChannel);
+            });
+
+        } catch (error) {
+            logger.error(`Error de reproducción: ${error.message}`);
+            song.channel.send('❌ Error al reproducir el audio.');
+            cleanupTempFile(tempPath);
+            queue.shift();
+            isProcessing = false;
+            playNextInQueue(voiceChannel);
+        }
+    });
+
+    processes.add(child);
+}
 
 function shuffleQueue(queue) {
     for (let i = queue.length - 1; i > 0; i--) {
@@ -1056,31 +916,6 @@ function cleanupTempFile(filePath) {
         }
     } catch (error) {
         logger.error(`Error eliminando archivo temporal: ${error.message}`);
-    }
-}
-
-// Función para limpiar todos los archivos temporales
-function cleanupAllTempFiles() {
-    try {
-        const files = fs.readdirSync('./');
-        const tempFiles = files.filter(file => file.startsWith('temp_audio_'));
-        
-        if (tempFiles.length > 0) {
-            logger.info(`🧹 Limpiando ${tempFiles.length} archivo(s) temporal(es)...`);
-            tempFiles.forEach(file => {
-                try {
-                    fs.unlinkSync(`./${file}`);
-                    logger.info(`🗑️ Archivo temporal eliminado: ${file}`);
-                } catch (error) {
-                    logger.error(`Error eliminando ${file}: ${error.message}`);
-                }
-            });
-            logger.info(`✅ Limpieza completada: ${tempFiles.length} archivo(s) eliminado(s)`);
-        } else {
-            logger.info(`✅ No hay archivos temporales para limpiar`);
-        }
-    } catch (error) {
-        logger.error(`Error durante la limpieza: ${error.message}`);
     }
 }
 
