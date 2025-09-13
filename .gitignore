@@ -101,3 +101,5 @@ temp_audio_*.m4a
 # Bot specific files
 bot.pid
 cookies.txt
+queue_backup.json
+favorites.json

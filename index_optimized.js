@@ -1,6 +1,19 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, StreamType } = require('@discordjs/voice');
+
+// Configurar librerías de encriptación para Discord Voice
+try {
+    require('tweetnacl');
+    console.log('✅ tweetnacl cargado para encriptación de voz');
+} catch (error) {
+    try {
+        require('libsodium-wrappers');
+        console.log('✅ libsodium-wrappers cargado como fallback');
+    } catch (error2) {
+        console.warn('⚠️ No hay librerías de encriptación disponibles');
+    }
+}
 const { exec, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -9,16 +22,35 @@ const { createLogger, format, transports } = require('winston');
 const moment = require('moment-timezone');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// Configuración desde variables de entorno
-const config = {
+// Configuración desde variables de entorno y config.json (fallback)
+let config = {
     token: process.env.DISCORD_TOKEN,
     timezone: process.env.TIMEZONE || 'America/Santiago',
     geminiApiKey: process.env.GEMINI_API_KEY,
-    maxFileSize: 50000000,
-    downloadTimeout: 300000,
-    downloadTimeoutLong: 1800000,
-    longVideoDurationThreshold: 3600
+    maxFileSize: parseInt(process.env.MAX_FILE_SIZE) || 50000000,
+    downloadTimeout: parseInt(process.env.DOWNLOAD_TIMEOUT) || 300000,
+    downloadTimeoutLong: parseInt(process.env.DOWNLOAD_TIMEOUT_LONG) || 1800000,
+    longVideoDurationThreshold: parseInt(process.env.LONG_VIDEO_DURATION_THRESHOLD) || 3600
 };
+
+// Fallback a config.json si no hay variables de entorno
+if (!config.token) {
+    try {
+        const configFile = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
+        config = {
+            token: configFile.token || config.token,
+            timezone: configFile.timezone || config.timezone,
+            geminiApiKey: configFile.geminiApiKey || config.geminiApiKey,
+            maxFileSize: configFile.maxFileSize || config.maxFileSize,
+            downloadTimeout: configFile.downloadTimeout || config.downloadTimeout,
+            downloadTimeoutLong: configFile.downloadTimeoutLong || config.downloadTimeoutLong,
+            longVideoDurationThreshold: configFile.longVideoDurationThreshold || config.longVideoDurationThreshold
+        };
+        logger.info('📄 Configuración cargada desde config.json');
+    } catch (error) {
+        logger.warn('⚠️ No se encontró config.json, usando solo variables de entorno');
+    }
+}
 
 // Verificaciones de token
 if (!config.token) {
@@ -95,9 +127,26 @@ let audioFilters = {
 const processes = new Set();
 const addingSongs = new Set(); // Protección contra duplicación
 
+// Cache de metadatos para evitar consultas repetidas
+const metadataCache = new Map();
+const CACHE_EXPIRY = 30 * 60 * 1000; // 30 minutos
+
 // Archivo para persistencia
 const QUEUE_BACKUP_FILE = './queue_backup.json';
 const FAVORITES_FILE = './favorites.json';
+
+// Función para limpiar cache expirado
+function cleanupExpiredCache() {
+    const now = Date.now();
+    for (const [key, value] of metadataCache.entries()) {
+        if (now - value.timestamp > CACHE_EXPIRY) {
+            metadataCache.delete(key);
+        }
+    }
+}
+
+// Limpiar cache cada 10 minutos
+setInterval(cleanupExpiredCache, 10 * 60 * 1000);
 
 // Función para guardar la cola
 function saveQueue() {
@@ -453,6 +502,14 @@ async function getVideoInfo(url) {
     return new Promise((resolve, reject) => {
         const cleanedUrl = cleanYouTubeUrl(url);
         
+        // Verificar cache primero
+        const cachedData = metadataCache.get(cleanedUrl);
+        if (cachedData && (Date.now() - cachedData.timestamp < CACHE_EXPIRY)) {
+            logger.info(`📦 Usando información cacheada para: ${cachedData.data.title}`);
+            resolve(cachedData.data);
+            return;
+        }
+        
         exec(`yt-dlp --get-title --get-duration --no-warnings "${cleanedUrl}"`, { 
             timeout: 10000, 
             encoding: 'utf8',
@@ -474,13 +531,21 @@ async function getVideoInfo(url) {
             // Determinar si debería usar streaming (videos > 15 minutos)
             const shouldStream = duration && parseDurationToSeconds(duration) > 900; // 15 minutos = 15 * 60 segundos
             
-            resolve({ 
+            const videoData = { 
                 title: title, 
                 originalTitle: title,
                 duration: duration,
                 isLong: isLong,
                 shouldStream: shouldStream
+            };
+            
+            // Cachear la información
+            metadataCache.set(cleanedUrl, {
+                data: videoData,
+                timestamp: Date.now()
             });
+            
+            resolve(videoData);
         });
     });
 }
@@ -739,7 +804,7 @@ async function addSongToQueue(url, member, channel, voiceChannel) {
 }
 
 // Reproducir siguiente canción (simplificado)
-async function playNextInQueue(voiceChannel) {
+async function playNextInQueue(voiceChannel, channel = null) {
     if (isProcessing) {
         logger.warn('Ya hay una descarga en proceso');
         return;
@@ -753,6 +818,9 @@ async function playNextInQueue(voiceChannel) {
                 channelId: voiceChannel.id,
                 guildId: voiceChannel.guild.id,
                 adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+                selfDeaf: false,
+                selfMute: false,
+                useDAVE: false // Deshabilitar protocolo DAVE
             });
             
             // Esperar a que la conexión esté lista
@@ -832,21 +900,22 @@ async function playNextInQueue(voiceChannel) {
     // Decidir entre streaming y descarga
     if (song.shouldStream) {
         logger.info(`🌐 Iniciando streaming para: ${song.title}`);
-        await playStreamDirectly(song, voiceChannel);
+        await playStreamDirectly(song, voiceChannel, channel);
     } else {
         logger.info(`📥 Iniciando descarga para: ${song.title}`);
-        await playWithDownload(song, voiceChannel);
+        await playWithDownload(song, voiceChannel, 0, channel);
     }
 }
 
 // Función para reproducir mediante streaming directo
-async function playStreamDirectly(song, voiceChannel) {
+async function playStreamDirectly(song, voiceChannel, channel = null) {
     try {
-        song.channel.send(`🌐 **Obteniendo stream**: ${song.title}`);
+        const sendChannel = channel || song.channel;
+        if (sendChannel) sendChannel.send(`🌐 **Obteniendo stream**: ${song.title}`);
         
         const streamUrl = await getStreamUrl(song.url);
         
-        song.channel.send(`🎵 **Iniciando streaming**: ${song.title}`);
+        if (sendChannel) sendChannel.send(`🎵 **Iniciando streaming**: ${song.title}`);
         
         const resource = createAudioResource(streamUrl, {
             inputType: StreamType.Arbitrary,
@@ -861,7 +930,8 @@ async function playStreamDirectly(song, voiceChannel) {
 
         player.on(AudioPlayerStatus.Playing, () => {
             logger.info(`🌐 Streaming: ${song.title}`);
-            showMusicControls(song.channel);
+            const controlChannel = channel || song.channel;
+            if (controlChannel) showMusicControls(controlChannel);
         });
 
         player.on(AudioPlayerStatus.Idle, () => {
@@ -888,27 +958,30 @@ async function playStreamDirectly(song, voiceChannel) {
 
         player.on('error', error => {
             logger.error(`❌ Error de streaming: ${error.message}`);
-            song.channel.send(`❌ Error en streaming. Intentando descarga como fallback...`);
+            const fallbackChannel = channel || song.channel;
+            if (fallbackChannel) fallbackChannel.send(`❌ Error en streaming. Intentando descarga como fallback...`);
             // Fallback a descarga
             song.shouldStream = false;
-            playWithDownload(song, voiceChannel);
+            playWithDownload(song, voiceChannel, 0, channel);
         });
 
     } catch (error) {
         logger.error(`❌ Error obteniendo stream: ${error.message}`);
-        song.channel.send(`❌ Error en streaming. Intentando descarga como fallback...`);
+        const errorChannel = channel || song.channel;
+        if (errorChannel) errorChannel.send(`❌ Error en streaming. Intentando descarga como fallback...`);
         // Fallback a descarga
         song.shouldStream = false;
-        await playWithDownload(song, voiceChannel);
+        await playWithDownload(song, voiceChannel, 0, channel);
     }
 }
 
 // Función para reproducir mediante descarga (método original)
-async function playWithDownload(song, voiceChannel, seekSeconds = 0) {
+async function playWithDownload(song, voiceChannel, seekSeconds = 0, channel = null) {
     // Archivo temporal único
     const tempPath = path.join(__dirname, `temp_audio_${uuidv4()}.mp3`);
     
-    song.channel.send(`📥 **Descargando**: ${song.title}`);
+    const sendChannel = channel || song.channel;
+    if (sendChannel) sendChannel.send(`📥 **Descargando**: ${song.title}`);
 
     // Comando yt-dlp simplificado para videos normales
     const ytdlpArgs = [
@@ -922,7 +995,7 @@ async function playWithDownload(song, voiceChannel, seekSeconds = 0) {
     // Agregar seek si se especifica
     if (seekSeconds > 0) {
         ytdlpArgs.push('--download-sections', `*${seekSeconds}-inf`);
-        song.channel.send(`⏩ **Iniciando desde**: ${formatSecondsToTime(seekSeconds)}`);
+        if (sendChannel) sendChannel.send(`⏩ **Iniciando desde**: ${formatSecondsToTime(seekSeconds)}`);
     }
     
     ytdlpArgs.push('-o', tempPath, song.url);
@@ -938,7 +1011,7 @@ async function playWithDownload(song, voiceChannel, seekSeconds = 0) {
         logger.error('Timeout en descarga - proceso terminado');
         child.kill('SIGKILL');
         cleanupTempFile(tempPath);
-        song.channel.send('⏰ **Timeout en descarga** - La descarga tardó demasiado.');
+        if (sendChannel) sendChannel.send('⏰ **Timeout en descarga** - La descarga tardó demasiado.');
         queue.shift();
         isProcessing = false;
         playNextInQueue(voiceChannel);
@@ -948,7 +1021,7 @@ async function playWithDownload(song, voiceChannel, seekSeconds = 0) {
     child.on('error', error => {
         clearTimeout(timeoutId);
         logger.error(`Error en yt-dlp: ${error.message}`);
-        song.channel.send('❌ Error al descargar el audio.');
+        if (sendChannel) sendChannel.send('❌ Error al descargar el audio.');
         cleanupTempFile(tempPath);
         queue.shift();
         isProcessing = false;
@@ -962,7 +1035,7 @@ async function playWithDownload(song, voiceChannel, seekSeconds = 0) {
         
         if (code !== 0) {
             logger.error(`yt-dlp terminó con código ${code}`);
-            song.channel.send('❌ Error al descargar el audio. Saltando canción...');
+            if (sendChannel) sendChannel.send('❌ Error al descargar el audio. Saltando canción...');
             cleanupTempFile(tempPath);
             queue.shift();
             isProcessing = false;
@@ -1024,7 +1097,8 @@ async function playWithDownload(song, voiceChannel, seekSeconds = 0) {
 
             player.on(AudioPlayerStatus.Playing, () => {
                 logger.info(`📥 Reproduciendo: ${song.title}`);
-                showMusicControls(song.channel);
+                const controlChannel = channel || song.channel;
+                if (controlChannel) showMusicControls(controlChannel);
             });
 
             player.on(AudioPlayerStatus.Idle, () => {
@@ -1060,7 +1134,7 @@ async function playWithDownload(song, voiceChannel, seekSeconds = 0) {
 
         } catch (error) {
             logger.error(`Error de reproducción: ${error.message}`);
-            song.channel.send('❌ Error al reproducir el audio.');
+            if (sendChannel) sendChannel.send('❌ Error al reproducir el audio.');
             cleanupTempFile(tempPath);
             queue.shift();
             isProcessing = false;
@@ -1073,6 +1147,10 @@ async function playWithDownload(song, voiceChannel, seekSeconds = 0) {
 
 // Mostrar controles de música (simplificado)
 async function showMusicControls(channel) {
+    if (!channel || !channel.send) {
+        logger.warn('Canal no válido para mostrar controles');
+        return;
+    }
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId('skip')
@@ -2227,7 +2305,7 @@ async function registerSlashCommands() {
 }
 
 // Evento cuando el bot se conecta
-client.on('ready', async () => {
+client.on('clientReady', async () => {
     clearTimeout(connectionTimeout);
     logger.info(`✅ Bot conectado como ${client.user.tag}`);
     logger.info('🎵 Bot de música optimizado listo para usar!');
@@ -2248,10 +2326,39 @@ client.on('ready', async () => {
 // Manejo de cierre limpio
 process.on('SIGINT', () => {
     logger.info('Apagando bot...');
-    processes.forEach(child => child.kill());
-    if (connection) connection.destroy();
+    
+    // Limpiar procesos
+    processes.forEach(child => {
+        try {
+            child.kill('SIGTERM');
+        } catch (error) {
+            logger.warn(`Error terminando proceso: ${error.message}`);
+        }
+    });
+    
+    // Limpiar conexiones
+    if (connection) {
+        try {
+            connection.destroy();
+        } catch (error) {
+            logger.warn(`Error cerrando conexión: ${error.message}`);
+        }
+    }
+    
+    // Limpiar cache
+    metadataCache.clear();
+    
+    // Limpiar archivos temporales
+    cleanupAllTempFiles();
+    
     client.destroy();
-    process.exit();
+    process.exit(0);
+});
+
+// Manejo adicional para SIGTERM (para contenedores/servicios)
+process.on('SIGTERM', () => {
+    logger.info('Recibido SIGTERM, cerrando bot...');
+    process.emit('SIGINT');
 });
 
 // Funciones auxiliares para limpiar y validar URLs
