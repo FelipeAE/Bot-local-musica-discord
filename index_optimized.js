@@ -1174,7 +1174,7 @@ async function showQueueMessage(channel, page = 0) {
 
     // Crear botones de navegación solo si hay más de una página
     const components = [];
-    if (totalPages > 1) {
+    if (queue.length > 10) {
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId(`queue_msg_prev_${page}`)
@@ -1239,7 +1239,7 @@ async function showQueuePaginated(interaction, page = 0) {
 
     // Crear botones de navegación solo si hay más de una página
     const components = [];
-    if (totalPages > 1) {
+    if (queue.length > 10) {
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId(`queue_prev_${page}`)
@@ -1262,9 +1262,11 @@ async function showQueuePaginated(interaction, page = 0) {
     if (interaction.replied || interaction.deferred) {
         await interaction.editReply({ embeds: [queueEmbed], components });
     } else {
-        // No usar ephemeral cuando hay botones de navegación, para mejor visibilidad
-        if (components.length > 0) {
+        // Para colas grandes (>10 canciones), usar mensaje normal con botones
+        // Para colas pequeñas (≤10 canciones), usar mensaje ephemeral sin botones
+        if (queue.length > 10) {
             const reply = await interaction.reply({ embeds: [queueEmbed], components });
+            console.log(`🐛 Sent non-ephemeral queue with ${components.length} components`);
             // Auto-eliminar después de 5 minutos para mantener el canal limpio
             setTimeout(async () => {
                 try {
@@ -1275,6 +1277,7 @@ async function showQueuePaginated(interaction, page = 0) {
             }, 5 * 60 * 1000);
         } else {
             await interaction.reply({ embeds: [queueEmbed], flags: MessageFlags.Ephemeral });
+            console.log(`🐛 Sent ephemeral queue (small queue)`);
         }
     }
 }
