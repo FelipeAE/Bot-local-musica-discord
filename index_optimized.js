@@ -1194,7 +1194,20 @@ async function showQueueMessage(channel, page = 0) {
         components.push(row);
     }
 
-    return channel.send({ embeds: [queueEmbed], components });
+    const message = await channel.send({ embeds: [queueEmbed], components });
+    
+    // Auto-eliminar después de 5 minutos si tiene botones de navegación
+    if (components.length > 0) {
+        setTimeout(async () => {
+            try {
+                await message.delete();
+            } catch (error) {
+                // Ignorar errores si el mensaje ya fue eliminado
+            }
+        }, 5 * 60 * 1000);
+    }
+    
+    return message;
 }
 
 // Función para mostrar cola con paginación
@@ -1249,7 +1262,20 @@ async function showQueuePaginated(interaction, page = 0) {
     if (interaction.replied || interaction.deferred) {
         await interaction.editReply({ embeds: [queueEmbed], components });
     } else {
-        await interaction.reply({ embeds: [queueEmbed], components, flags: MessageFlags.Ephemeral });
+        // No usar ephemeral cuando hay botones de navegación, para mejor visibilidad
+        if (components.length > 0) {
+            const reply = await interaction.reply({ embeds: [queueEmbed], components });
+            // Auto-eliminar después de 5 minutos para mantener el canal limpio
+            setTimeout(async () => {
+                try {
+                    await reply.delete();
+                } catch (error) {
+                    // Ignorar errores si el mensaje ya fue eliminado
+                }
+            }, 5 * 60 * 1000);
+        } else {
+            await interaction.reply({ embeds: [queueEmbed], flags: MessageFlags.Ephemeral });
+        }
     }
 }
 
