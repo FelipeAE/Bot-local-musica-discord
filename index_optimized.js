@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageFlags } = require('discord.js');
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, StreamType } = require('@discordjs/voice');
 
 // Configurar librerías de encriptación para Discord Voice
@@ -1145,6 +1145,114 @@ async function playWithDownload(song, voiceChannel, seekSeconds = 0, channel = n
     processes.add(child);
 }
 
+// Función para mostrar cola con paginación para mensajes
+async function showQueueMessage(channel, page = 0) {
+    if (queue.length === 0) {
+        return channel.send('La cola está vacía.');
+    }
+
+    const itemsPerPage = 10;
+    const totalPages = Math.ceil(queue.length / itemsPerPage);
+    const startIndex = page * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, queue.length);
+    
+    const queueList = queue.slice(startIndex, endIndex).map((song, index) => {
+        const globalIndex = startIndex + index + 1;
+        const duration = song.duration ? ` \`[${song.duration}]\`` : ' `[--:--]`';
+        const method = song.shouldStream ? '🌐' : '📥';
+        return `${globalIndex}. ${normalizeUTF8(song.title)}${duration} ${method}`;
+    }).join('\n');
+
+    const queueEmbed = {
+        title: '🎶 Cola de Reproducción',
+        description: queueList,
+        color: 0x00ff00,
+        footer: { 
+            text: `Página ${page + 1}/${totalPages} | ${queue.length} canciones totales | 🌐 = Streaming, 📥 = Descarga`
+        }
+    };
+
+    // Crear botones de navegación solo si hay más de una página
+    const components = [];
+    if (totalPages > 1) {
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`queue_msg_prev_${page}`)
+                .setLabel('◀️ Anterior')
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(page === 0),
+            new ButtonBuilder()
+                .setCustomId(`queue_msg_next_${page}`)
+                .setLabel('Siguiente ▶️')
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(page === totalPages - 1),
+            new ButtonBuilder()
+                .setCustomId('queue_msg_close')
+                .setLabel('❌ Cerrar')
+                .setStyle(ButtonStyle.Danger)
+        );
+        components.push(row);
+    }
+
+    return channel.send({ embeds: [queueEmbed], components });
+}
+
+// Función para mostrar cola con paginación
+async function showQueuePaginated(interaction, page = 0) {
+    if (queue.length === 0) {
+        return interaction.reply({ content: 'La cola está vacía', flags: MessageFlags.Ephemeral });
+    }
+
+    const itemsPerPage = 10;
+    const totalPages = Math.ceil(queue.length / itemsPerPage);
+    const startIndex = page * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, queue.length);
+    
+    const queueList = queue.slice(startIndex, endIndex).map((song, index) => {
+        const globalIndex = startIndex + index + 1;
+        const duration = song.duration ? ` \`[${song.duration}]\`` : ' `[--:--]`';
+        const method = song.shouldStream ? '🌐' : '📥';
+        return `${globalIndex}. ${normalizeUTF8(song.title)}${duration} ${method}`;
+    }).join('\n');
+
+    const queueEmbed = {
+        title: '🎶 Cola de Reproducción',
+        description: queueList,
+        color: 0x00ff00,
+        footer: { 
+            text: `Página ${page + 1}/${totalPages} | ${queue.length} canciones totales | 🌐 = Streaming, 📥 = Descarga`
+        }
+    };
+
+    // Crear botones de navegación solo si hay más de una página
+    const components = [];
+    if (totalPages > 1) {
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`queue_prev_${page}`)
+                .setLabel('◀️ Anterior')
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(page === 0),
+            new ButtonBuilder()
+                .setCustomId(`queue_next_${page}`)
+                .setLabel('Siguiente ▶️')
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(page === totalPages - 1),
+            new ButtonBuilder()
+                .setCustomId('queue_close')
+                .setLabel('❌ Cerrar')
+                .setStyle(ButtonStyle.Danger)
+        );
+        components.push(row);
+    }
+
+    if (interaction.replied || interaction.deferred) {
+        await interaction.editReply({ embeds: [queueEmbed], components });
+    } else {
+        await interaction.reply({ embeds: [queueEmbed], components, flags: MessageFlags.Ephemeral });
+    }
+}
+
 // Mostrar controles de música (simplificado)
 async function showMusicControls(channel) {
     if (!channel || !channel.send) {
@@ -1237,7 +1345,7 @@ client.on('interactionCreate', async interaction => {
         switch (interaction.commandName) {
             case 'play':
                 if (!voiceChannel) {
-                    return interaction.reply({ content: 'Debes estar en un canal de voz para reproducir música.', ephemeral: true });
+                    return interaction.reply({ content: 'Debes estar en un canal de voz para reproducir música.', flags: MessageFlags.Ephemeral });
                 }
                 
                 const query = interaction.options.getString('cancion');
@@ -1350,7 +1458,7 @@ client.on('interactionCreate', async interaction => {
                 const volume = interaction.options.getInteger('nivel');
                 
                 if (!player || !player.state.resource) {
-                    return interaction.reply({ content: '❌ No hay música reproduciéndose', ephemeral: true });
+                    return interaction.reply({ content: '❌ No hay música reproduciéndose', flags: MessageFlags.Ephemeral });
                 }
                 
                 currentVolume = volume / 100;
@@ -1370,11 +1478,11 @@ client.on('interactionCreate', async interaction => {
                 const skipCount = interaction.options.getInteger('cantidad') || 1;
                 
                 if (!currentSong && queue.length === 0) {
-                    return interaction.reply({ content: '❌ No hay música para saltar', ephemeral: true });
+                    return interaction.reply({ content: '❌ No hay música para saltar', flags: MessageFlags.Ephemeral });
                 }
                 
                 if (skipCount > queue.length + (currentSong ? 1 : 0)) {
-                    return interaction.reply({ content: `❌ Solo hay ${queue.length + (currentSong ? 1 : 0)} canción(es) disponible(s)`, ephemeral: true });
+                    return interaction.reply({ content: `❌ Solo hay ${queue.length + (currentSong ? 1 : 0)} canción(es) disponible(s)`, flags: MessageFlags.Ephemeral });
                 }
                 
                 if (currentSong && skipCount >= 1) {
@@ -1392,24 +1500,7 @@ client.on('interactionCreate', async interaction => {
                 break;
                 
             case 'queue':
-                if (queue.length === 0) {
-                    return interaction.reply({ content: 'La cola está vacía', ephemeral: true });
-                }
-                
-                const queueList = queue.slice(0, 10).map((song, index) => {
-                    const duration = song.duration ? ` \`[${song.duration}]\`` : ' `[--:--]`';
-                    const method = song.shouldStream ? '🌐' : '📥';
-                    return `${index + 1}. ${normalizeUTF8(song.title)}${duration} ${method}`;
-                }).join('\n');
-                
-                const queueEmbed = {
-                    title: '🎶 Cola de Reproducción',
-                    description: queueList + (queue.length > 10 ? `\n... y ${queue.length - 10} más` : ''),
-                    color: 0x00ff00,
-                    footer: { text: `Total: ${queue.length} canciones | 🌐 = Streaming, 📥 = Descarga` }
-                };
-                
-                await interaction.reply({ embeds: [queueEmbed], ephemeral: true });
+                await showQueuePaginated(interaction, 0);
                 break;
                 
             case 'favorites':
@@ -1418,7 +1509,7 @@ client.on('interactionCreate', async interaction => {
                 if (action === 'list') {
                     const userFavs = getUserFavorites(interaction.user.id);
                     if (userFavs.length === 0) {
-                        return interaction.reply({ content: '⭐ No tienes favoritos guardados', ephemeral: true });
+                        return interaction.reply({ content: '⭐ No tienes favoritos guardados', flags: MessageFlags.Ephemeral });
                     }
                     
                     const favsList = userFavs.slice(0, 10).map((fav, index) => {
@@ -1433,18 +1524,18 @@ client.on('interactionCreate', async interaction => {
                         footer: { text: `Total: ${userFavs.length} favoritos` }
                     };
                     
-                    await interaction.reply({ embeds: [favsEmbed], ephemeral: true });
+                    await interaction.reply({ embeds: [favsEmbed], flags: MessageFlags.Ephemeral });
                     
                 } else if (action === 'add') {
                     if (!currentSong) {
-                        return interaction.reply({ content: '❌ No hay música reproduciéndose', ephemeral: true });
+                        return interaction.reply({ content: '❌ No hay música reproduciéndose', flags: MessageFlags.Ephemeral });
                     }
                     
                     const added = addFavorite(interaction.user.id, currentSong);
                     if (added) {
                         await interaction.reply(`⭐ **${normalizeUTF8(currentSong.title)}** añadida a tus favoritos`);
                     } else {
-                        await interaction.reply({ content: '❌ Esta canción ya está en tus favoritos', ephemeral: true });
+                        await interaction.reply({ content: '❌ Esta canción ya está en tus favoritos', flags: MessageFlags.Ephemeral });
                     }
                     
                 } else if (action === 'clear') {
@@ -1452,7 +1543,7 @@ client.on('interactionCreate', async interaction => {
                     const userFavCount = favorites[interaction.user.id]?.length || 0;
                     
                     if (userFavCount === 0) {
-                        return interaction.reply({ content: '❌ No tienes favoritos para limpiar', ephemeral: true });
+                        return interaction.reply({ content: '❌ No tienes favoritos para limpiar', flags: MessageFlags.Ephemeral });
                     }
                     
                     favorites[interaction.user.id] = [];
@@ -1463,11 +1554,11 @@ client.on('interactionCreate', async interaction => {
                 
             case 'seek':
                 if (!currentSong) {
-                    return interaction.reply({ content: '❌ No hay música reproduciéndose', ephemeral: true });
+                    return interaction.reply({ content: '❌ No hay música reproduciéndose', flags: MessageFlags.Ephemeral });
                 }
                 
                 if (!voiceChannel) {
-                    return interaction.reply({ content: 'Debes estar en un canal de voz', ephemeral: true });
+                    return interaction.reply({ content: 'Debes estar en un canal de voz', flags: MessageFlags.Ephemeral });
                 }
                 
                 const timeArg = interaction.options.getString('tiempo');
@@ -1499,7 +1590,7 @@ client.on('interactionCreate', async interaction => {
     if (!interaction.isButton() && !interaction.isStringSelectMenu()) return;
 
     const voiceChannel = interaction.member.voice.channel;
-    if (!voiceChannel) return interaction.reply({ content: 'Entra a un canal de voz primero.', ephemeral: true });
+    if (!voiceChannel) return interaction.reply({ content: 'Entra a un canal de voz primero.', flags: MessageFlags.Ephemeral });
 
     try {
         // Manejo de menú desplegable de sugerencias de IA
@@ -1510,7 +1601,7 @@ client.on('interactionCreate', async interaction => {
             if (message.suggestions && message.suggestions[selectedIndex]) {
                 const suggestion = message.suggestions[selectedIndex];
                 
-                await interaction.deferReply({ ephemeral: true });
+                await interaction.deferReply({ flags: MessageFlags.Ephemeral });
                 
                 // Buscar en YouTube la sugerencia
                 const searchMessage = `🔍 Buscando sugerencia: **${suggestion}**`;
@@ -1548,7 +1639,7 @@ client.on('interactionCreate', async interaction => {
                     }
                 });
             } else {
-                await interaction.reply({ content: 'Error: No se pudo encontrar la sugerencia seleccionada.', ephemeral: true });
+                await interaction.reply({ content: 'Error: No se pudo encontrar la sugerencia seleccionada.', flags: MessageFlags.Ephemeral });
             }
             return;
         }
@@ -1564,7 +1655,7 @@ client.on('interactionCreate', async interaction => {
                 break;
 
             case 'pause_resume':
-                if (!player) return interaction.reply({ content: 'No hay música en reproducción.', ephemeral: true });
+                if (!player) return interaction.reply({ content: 'No hay música en reproducción.', flags: MessageFlags.Ephemeral });
                 
                 if (player.state.status === AudioPlayerStatus.Playing) {
                     player.pause();
@@ -1579,7 +1670,7 @@ client.on('interactionCreate', async interaction => {
 
             case 'shuffle':
                 if (queue.length < 2) {
-                    return interaction.reply({ content: 'Necesitas al menos 2 canciones para mezclar.', ephemeral: true });
+                    return interaction.reply({ content: 'Necesitas al menos 2 canciones para mezclar.', flags: MessageFlags.Ephemeral });
                 }
                 shuffleQueue(queue);
                 await interaction.reply('🔀 Cola mezclada');
@@ -1646,9 +1737,9 @@ client.on('interactionCreate', async interaction => {
 
             case 'ai_suggest':
                 if (!currentSong) {
-                    return interaction.reply({ content: 'No hay música reproduciéndose para generar sugerencias.', ephemeral: true });
+                    return interaction.reply({ content: 'No hay música reproduciéndose para generar sugerencias.', flags: MessageFlags.Ephemeral });
                 }
-                await interaction.deferReply({ ephemeral: true });
+                await interaction.deferReply({ flags: MessageFlags.Ephemeral });
                 await showAISuggestions(interaction.channel, currentSong.title);
                 await interaction.editReply('🤖 ¡Sugerencias generadas! Revisa el canal para ver las opciones.');
                 break;
@@ -1666,7 +1757,7 @@ client.on('interactionCreate', async interaction => {
                         showMusicControls(controlMessage.channel).catch(console.error);
                     }
                 } else {
-                    await interaction.reply({ content: 'El volumen ya está al máximo (100%)', ephemeral: true });
+                    await interaction.reply({ content: 'El volumen ya está al máximo (100%)', flags: MessageFlags.Ephemeral });
                 }
                 break;
 
@@ -1683,26 +1774,26 @@ client.on('interactionCreate', async interaction => {
                         showMusicControls(controlMessage.channel).catch(console.error);
                     }
                 } else {
-                    await interaction.reply({ content: 'El volumen ya está al mínimo (10%)', ephemeral: true });
+                    await interaction.reply({ content: 'El volumen ya está al mínimo (10%)', flags: MessageFlags.Ephemeral });
                 }
                 break;
 
             case 'add_favorite':
                 if (!currentSong) {
-                    return interaction.reply({ content: '❌ No hay música reproduciéndose para añadir a favoritos', ephemeral: true });
+                    return interaction.reply({ content: '❌ No hay música reproduciéndose para añadir a favoritos', flags: MessageFlags.Ephemeral });
                 }
                 
                 const added = addFavorite(interaction.user.id, currentSong);
                 if (added) {
                     await interaction.reply(`⭐ **${normalizeUTF8(currentSong.title)}** añadida a tus favoritos`);
                 } else {
-                    await interaction.reply({ content: '❌ Esta canción ya está en tus favoritos', ephemeral: true });
+                    await interaction.reply({ content: '❌ Esta canción ya está en tus favoritos', flags: MessageFlags.Ephemeral });
                 }
                 break;
 
             case 'show_queue':
                 if (queue.length === 0) {
-                    return interaction.reply({ content: 'La cola está vacía.', ephemeral: true });
+                    return interaction.reply({ content: 'La cola está vacía.', flags: MessageFlags.Ephemeral });
                 }
 
                 const queueList = queue.slice(0, 10).map((song, index) => {
@@ -1718,18 +1809,56 @@ client.on('interactionCreate', async interaction => {
                     footer: { text: `Total: ${queue.length} canciones | 🌐 = Streaming, 📥 = Descarga` }
                 };
 
-                await interaction.reply({ embeds: [queueEmbed], ephemeral: true });
+                await interaction.reply({ embeds: [queueEmbed], flags: MessageFlags.Ephemeral });
                 break;
 
             default:
+                // Manejo de botones de paginación de cola
+                if (interaction.customId.startsWith('queue_prev_')) {
+                    const currentPage = parseInt(interaction.customId.split('_')[2]);
+                    const newPage = Math.max(0, currentPage - 1);
+                    await showQueuePaginated(interaction, newPage);
+                    return;
+                }
+                
+                if (interaction.customId.startsWith('queue_next_')) {
+                    const currentPage = parseInt(interaction.customId.split('_')[2]);
+                    const newPage = currentPage + 1;
+                    await showQueuePaginated(interaction, newPage);
+                    return;
+                }
+                
+                if (interaction.customId.startsWith('queue_msg_prev_')) {
+                    const currentPage = parseInt(interaction.customId.split('_')[3]);
+                    const newPage = Math.max(0, currentPage - 1);
+                    await interaction.message.edit({ embeds: [], components: [] });
+                    await showQueueMessage(interaction.channel, newPage);
+                    await interaction.deferUpdate();
+                    return;
+                }
+                
+                if (interaction.customId.startsWith('queue_msg_next_')) {
+                    const currentPage = parseInt(interaction.customId.split('_')[3]);
+                    const newPage = currentPage + 1;
+                    await interaction.message.edit({ embeds: [], components: [] });
+                    await showQueueMessage(interaction.channel, newPage);
+                    await interaction.deferUpdate();
+                    return;
+                }
+                
+                if (interaction.customId === 'queue_close' || interaction.customId === 'queue_msg_close') {
+                    await interaction.message.delete().catch(() => {});
+                    return;
+                }
+                
                 // Manejo de IDs de interacción no reconocidos
-                await interaction.reply({ content: 'Interacción no reconocida.', ephemeral: true });
+                await interaction.reply({ content: 'Interacción no reconocida.', flags: MessageFlags.Ephemeral });
                 break;
         }
     } catch (error) {
         logger.error(`Error en interacción: ${error.message}`);
         if (!interaction.replied && !interaction.deferred) {
-            await interaction.reply({ content: 'Ocurrió un error procesando tu solicitud.', ephemeral: true });
+            await interaction.reply({ content: 'Ocurrió un error procesando tu solicitud.', flags: MessageFlags.Ephemeral });
         }
     }
 });
@@ -1869,24 +1998,7 @@ client.on('messageCreate', async message => {
             });
         }
     } else if (command === 'queue') {
-        if (queue.length === 0) {
-            message.channel.send('La cola está vacía.');
-        } else {
-            const queueList = queue.slice(0, 10).map((song, index) => {
-                const duration = song.duration ? ` \`[${song.duration}]\`` : ' `[--:--]`';
-                const method = song.shouldStream ? '🌐' : '📥';
-                return `${index + 1}. ${normalizeUTF8(song.title)}${duration} ${method}`;
-            }).join('\n');
-            
-            const queueEmbed = {
-                title: '🎶 Cola de Reproducción',
-                description: queueList + (queue.length > 10 ? `\n... y ${queue.length - 10} más` : ''),
-                color: 0x00ff00,
-                footer: { text: `Total: ${queue.length} canciones | 🌐 = Streaming, 📥 = Descarga` }
-            };
-            
-            message.channel.send({ embeds: [queueEmbed] });
-        }
+        await showQueueMessage(message.channel, 0);
     } else if (command === 'suggest') {
         const songQuery = args.join(' ');
         
